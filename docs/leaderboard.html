@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Leaderboard | Transit Fabric testnet 611</title><link rel="stylesheet" href="style.css"></head><body>
+<header><a class="brand" href="index.html">Transit Fabric releases</a>
+<nav><a href="index.html">Home</a><a href="quickstart.html">Quick start</a><a href="known-limits.html">Known limits</a><a href="bounty.html">Bounty</a><a href="leaderboard.html">Leaderboard</a></nav></header>
+<main>
+<h1>Leaderboard</h1>
+<p>Founding Testers, by points. Tiers and points are explained on the <a href="bounty.html">bounty page</a>. Maintainers update this list by pull request.</p>
+<div class="tw"><table id="lb" hidden>
+<thead><tr><th>#</th><th>Handle</th><th>Points</th><th>Findings</th><th>Since</th></tr></thead><tbody></tbody></table></div>
+<p id="empty">No findings yet.</p>
+<script>
+(function(){
+  var empty=document.getElementById('empty'),tbl=document.getElementById('lb');
+  fetch('leaderboard.json',{cache:'no-cache'}).then(function(r){return r.json()}).then(function(rows){
+    if(!Array.isArray(rows)||!rows.length)return;
+    rows.sort(function(a,b){return (b.points||0)-(a.points||0)});
+    var tb=tbl.querySelector('tbody');
+    rows.forEach(function(r,i){
+      var tr=document.createElement('tr');
+      [i+1,r.handle,r.points,r.findings,r.since].forEach(function(v){
+        var td=document.createElement('td');td.textContent=(v==null?'':v);tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    tbl.hidden=false;empty.hidden=true;
+  }).catch(function(){empty.textContent='Could not load the leaderboard.'});
+})();
+</script>
+</main>
+<footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
+<a href="https://github.com/transitfabric/releases/releases">Releases</a> ·
+<a href="https://github.com/transitfabric/releases/issues">Issues</a> ·
+<a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a></footer>
+</body></html>

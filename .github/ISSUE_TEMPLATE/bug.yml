@@ -1,0 +1,50 @@
+name: Bug report
+description: An ordinary bug on testnet subnet 611. Security findings go to "Report a vulnerability", not here.
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security findings and exploits: do not file them here. Use "Report a vulnerability" on the Security tab.
+        Read the known limits first: https://transitfabric.xyz/known-limits.html
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `bwos-node --version`, or the release tag.
+    validations:
+      required: true
+  - type: input
+    id: os_node
+    attributes:
+      label: OS and node type
+      description: For example "Ubuntu 24.04, kernel node (path A)" or "Debian 12, no-root node in Docker, behind NAT (path B)".
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Remove private keys, seed phrases, IP addresses and hostnames first.
+      render: text
+    validations:
+      required: false

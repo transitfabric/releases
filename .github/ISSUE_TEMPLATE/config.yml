@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security finding or exploit
+    url: https://github.com/transitfabric/releases/security/advisories/new
+    about: Use "Report a vulnerability" (private advisory). Never open a public Issue for a security finding.

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bounty | Transit Fabric testnet 611</title><link rel="stylesheet" href="style.css"></head><body>
+<header><a class="brand" href="index.html">Transit Fabric releases</a>
+<nav><a href="index.html">Home</a><a href="quickstart.html">Quick start</a><a href="known-limits.html">Known limits</a><a href="bounty.html">Bounty</a><a href="leaderboard.html">Leaderboard</a></nav></header>
+<main>
+<h1>Transit Fabric testnet bug bounty and Founding Tester program</h1>
+<p>Transit Fabric is a Bittensor subnet for a decentralized network fabric. It is testing on Bittensor <strong>testnet, subnet 611</strong>. We reward early testers who find bugs and exploits in the released software and the testnet network, and who keep nodes and solvers running.</p>
+<h2>Scope</h2>
+<ul>
+<li>The software released at github.com/transitfabric/releases: the node (kernel and no-root), the router image and packages, the validator, the solver daemon, the <code>bwos</code> CLI, and the link page.</li>
+<li>The incentive mechanism as it runs on subnet 611: scoring, measurement, bindings and route tables.</li>
+<li>The design documents we publish with a release.</li>
+</ul>
+<h2>Out of scope</h2>
+<ul>
+<li>Bittensor/Subtensor itself, wallets, and third-party infrastructure.</li>
+<li>Denial of service against anyone's machines or networks, and spam or flooding of the public testnet.</li>
+<li>Social engineering, phishing, and physical attacks.</li>
+<li>Anything on mainnet (finney). Never use mainnet keys or real TAO.</li>
+<li>Issues already listed in our published threat model as open or accepted, unless you show a new way to exploit them or a bigger payoff.</li>
+</ul>
+<h2>Rewards: points, small TAO tips, and recognition</h2>
+<p>This is a community program for early testers. It isn't a big-money bounty.</p>
+<h3>Points for each valid finding</h3>
+<div class="tw"><table>
+<tr><th>Tier</th><th>What it means</th><th>Points</th></tr>
+<tr><td>Critical</td><td>Stop weight-setting for the subnet; make honest validators disagree on weights; take over another operator's nodes or binding; collect most of an emission pool for nothing</td><td>100</td></tr>
+<tr><td>High</td><td>An incentive exploit worth 2x or more over honest play at low cost; knock honest operators out of credit; crash validators remotely</td><td>40</td></tr>
+<tr><td>Medium</td><td>A bounded unfair gain; a reliability bug that skews scoring; a leak of private data</td><td>15</td></tr>
+<tr><td>Low</td><td>Hardening issues, minor bugs, misleading docs</td><td>5</td></tr>
+</table></div>
+<ul>
+<li><strong>+25%</strong> for a working reproduction (a sim or a testnet demonstration) plus a suggested fix.</li>
+<li>The first valid report of an issue earns the points. Duplicates, and issues already listed as open in our threat model, get credit only.</li>
+<li>We assign the tier and the points, and we explain our reasoning.</li>
+</ul>
+<h3>Points for taking part</h3>
+<ul>
+<li>Running a node or solver that stays live and scored: points per week it stays up.</li>
+<li>Onboarding feedback, and documentation fixes that get merged.</li>
+</ul>
+<p><strong>Small TAO tips:</strong> the top findings may also get a small tip in real TAO, at our discretion.</p>
+<p><strong>Future alpha:</strong> we intend to recognise points with a discretionary allocation of Transit Fabric alpha after the subnet launches on mainnet. This is an intention, not a promise: the amounts and timing are set at launch and depend on the launch happening.</p>
+<p><strong>Recognition:</strong> a public <a href="leaderboard.html">leaderboard</a> on this repository, a Founding Tester role in our Discord, and credit in the release notes.</p>
+<h2>How to report</h2>
+<ul>
+<li><strong>Security issues and exploits:</strong> report them privately through GitHub's "Report a vulnerability" (private security advisory) on <a href="https://github.com/transitfabric/releases/security/advisories/new">github.com/transitfabric/releases</a>. Don't open public issues for them.</li>
+<li><strong>Ordinary bugs:</strong> open a public <a href="https://github.com/transitfabric/releases/issues">Issue</a> on the same repository.</li>
+<li>Include the version, the steps to reproduce, what you expected and what happened, and logs with addresses and keys removed.</li>
+</ul>
+<h2>Rules</h2>
+<ul>
+<li>Testnet only. Use your own nodes, hotkeys and test TAO.</li>
+<li>Don't disrupt other testers beyond the minimum needed to demonstrate an issue. Stop and report as soon as you've shown it.</li>
+<li>The first valid report of an issue gets the reward. Duplicates don't.</li>
+<li>Disclosure: keep security findings private until they're fixed. After that we give public credit, with your permission.</li>
+<li>We add a regression test and a threat-model entry for every paid finding.</li>
+</ul>
+</main>
+<footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
+<a href="https://github.com/transitfabric/releases/releases">Releases</a> ·
+<a href="https://github.com/transitfabric/releases/issues">Issues</a> ·
+<a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a></footer>
+</body></html>

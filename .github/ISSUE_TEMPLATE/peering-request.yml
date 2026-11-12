@@ -1,0 +1,39 @@
+name: Peering request
+description: Ask our public node to peer with yours on testnet subnet 611.
+title: "Peering request"
+labels: ["peering"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do the linking steps first and start your node with its probe sessions. Validators list a node at the window after its binding and consent reach them, so allow up to about 2.5 hours.
+
+        Our node reads open Peering requests every 5 minutes. Once your node is in its snapshot under a UID that is not ours, and your binding verifies and is live, it adds yours. Limits: one node per UID, first come first served. Close this Issue to withdraw.
+
+        **Your UID comes from the validators' snapshot (the chain), not from the card.** Only the `binding` in the card is used. Your endpoint can stay empty. The card is public: put no private keys in it.
+  - type: textarea
+    id: card
+    attributes:
+      label: Peer card
+      description: Paste your card inside ONE fenced json block, exactly as made in section 5 of the tester guide. Keep the `json` fence.
+      placeholder: |
+        ```json
+        {
+          "uid": 0,
+          "node": "...",
+          "asn": 0,
+          "address": "...",
+          "wg": "<base64>",
+          "endpoint": "",
+          "binding": {
+            "v": 1,
+            "node": "...",
+            "wg": "...",
+            "not_before": 1,
+            "not_after": 100000000,
+            "sig": "..."
+          }
+        }
+        ```
+    validations:
+      required: true
