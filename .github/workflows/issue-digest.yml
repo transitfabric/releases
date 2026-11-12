@@ -1,0 +1,51 @@
+# Every 4 hours, posts a digest of new Issues and new comments to the
+# Transit Fabric Discord. Only public Issues: security advisories are private
+# and are never posted. Titles are reporter-written, so mentions are disabled
+# and links aren't expanded.
+name: issue-digest
+
+on:
+  schedule:
+    - cron: "17 */4 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: read
+  actions: read
+
+concurrency:
+  group: issue-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Post digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          [ -n "$WEBHOOK" ] || { echo "DISCORD_WEBHOOK secret not set"; exit 1; }
+          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          # Since the last successful run of this workflow, or 4 hours ago.
+          since=$(gh api "repos/$REPO/actions/workflows/issue-digest.yml/runs?status=success&per_page=1" \
+                    --jq '.workflow_runs[0].run_started_at // empty')
+          [ -n "$since" ] || since=$(date -u -d '4 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          echo "window: $since .. $now"
+          clean='gsub("[@`<>*_~|\\[\\]]"; "") | .[0:120]'
+          issues=$(gh api "repos/$REPO/issues?state=all&since=$since&per_page=100" --paginate \
+            --jq ".[] | select(.pull_request == null) | select(.created_at > \"$since\" and .created_at <= \"$now\")
+                  | \"• New #\(.number): \(.title | $clean) — <\(.html_url)>\"")
+          comments=$(gh api "repos/$REPO/issues/comments?since=$since&per_page=100" --paginate \
+            --jq "[.[] | select(.created_at > \"$since\" and .created_at <= \"$now\") | select(.user.type != \"Bot\")
+                  | .issue_url | split(\"/\") | last] | group_by(.) | .[] | \"• #\(.[0]): \(length) new comment(s)\"")
+          if [ -z "$issues$comments" ]; then echo "nothing new"; exit 0; fi
+          body=$(printf '**Bug reports and Issues, last few hours**\n%s\n%s\nAll Issues: <https://github.com/%s/issues>' \
+                   "$issues" "$comments" "$REPO" | sed '/^$/d' | head -c 1900)
+          jq -n --arg c "$body" '{username:"Transit Fabric", content:$c, flags:4, allowed_mentions:{parse:[]}}' \
+            | curl -fsS -X POST -H 'Content-Type: application/json' --data @- "$WEBHOOK" >/dev/null
+          echo "posted"
