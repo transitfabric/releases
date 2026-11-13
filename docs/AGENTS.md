@@ -4,7 +4,7 @@ For AI agents working on behalf of a tester. Humans: start at https://transitfab
 
 Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.3** as it is today. The command-line tools are still named `bwos`.
 
-**Not in tester.3:** `bwos doctor`, `bwos report` and an agent skill arrive with tester.3. Don't call them, and don't tell the user they exist. The bounty opens with tester.3. Reports are welcome now, filed the same way.
+**New in tester.3:** `bwos doctor --json`, `bwos report` and an agent skill. Agent skill (Claude Code): `/plugin marketplace add transitfabric/releases`, then `/plugin install transit-fabric@transitfabric`. The bounty opens soon. Reports are welcome now, filed the same way.
 
 ## Where things are
 
