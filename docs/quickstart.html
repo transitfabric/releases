@@ -8,10 +8,10 @@
 <p>This release joins <strong>Bittensor testnet, subnet 611</strong>. Testnet only: never use a mainnet wallet. The full guide ships with each release, as <code>testers.md</code>.</p>
 <h2>1. Wallet and UID</h2>
 <p>Use a new wallet, never your mainnet coldkey. Get test TAO from the Bittensor community Discord. We don't hand it out.</p>
-<pre><code>btcli wallet create --wallet-name pipe-test --hotkey default
-btcli subnets register --network test --netuid 611 --wallet-name pipe-test --hotkey default
-btcli wallet overview --wallet-name pipe-test --netuid 611 --network test
-btcli wallet transfer --wallet-name pipe-test --network test --dest &lt;hotkey SS58&gt; --amount 0.1</code></pre>
+<pre><code>btcli wallet create --wallet-name tf-test --hotkey default
+btcli subnets register --network test --netuid 611 --wallet-name tf-test --hotkey default
+btcli wallet overview --wallet-name tf-test --netuid 611 --network test
+btcli wallet transfer --wallet-name tf-test --network test --dest &lt;hotkey SS58&gt; --amount 0.1</code></pre>
 <p>The last command sends a little test TAO to the hotkey for fees.</p>
 <h2>2. Check the download</h2>
 <p>Download from the <a href="https://github.com/transitfabric/releases/releases">Releases page</a>. Compare <code>sha256sum SHA256SUMS</code> with the hash in our announcement. Then run <code>sha256sum -c --ignore-missing SHA256SUMS</code>. You need <code>validator-set.json</code> and <code>network.json</code> for every path.</p>
@@ -21,7 +21,7 @@ btcli wallet transfer --wallet-name pipe-test --network test --dest &lt;hotkey S
 <h2>3. Pick a path</h2>
 <div class="tw"><table>
 <tr><th></th><th>Machine</th><th>Open inbound</th><th>Run</th></tr>
-<tr><td>A</td><td>Ubuntu 24.04, root, public IPv4</td><td>UDP per peer, TCP 8621</td><td><code>install.sh</code> with <code>"probe"</code> in <code>node.json</code> and <code>--bwos-probe</code></td></tr>
+<tr><td>A</td><td>Ubuntu 24.04, root, public IPv4</td><td>UDP per peer, TCP 8621</td><td><code>install.sh</code> with <code>"probe"</code> in <code>node.json</code> <code>--bwos-probe</code> and <code>--fabric-sense</code></td></tr>
 <tr><td>B</td><td>Any Linux, no root; process or Docker; NAT is fine</td><td>Public: UDP 51820, TCP 8621. NAT: none</td><td><code>bwos-node run --mode userspace ... --probe-peer ... --consents</code>, and <code>bwos-probe cap-sink</code> if public</td></tr>
 <tr><td>C</td><td>Linksys WRT1900AC v1</td><td>None</td><td>Flash the image. Not measured or paid in this release</td></tr>
 <tr><td>D</td><td>Linux, public IPv4</td><td>TCP 8090</td><td><code>bwos-solver daemon ... --axon &lt;your public address&gt;:8090 --solver-cmd &lt;your solver&gt;</code></td></tr>
@@ -33,13 +33,14 @@ btcli wallet transfer --wallet-name pipe-test --network test --dest &lt;hotkey S
 ./bwos-node link-url -key keys/node.key -base http://localhost:8000/ -hotkey &lt;hotkey SS58&gt; -netuid 611 -not-after 100000000 -out keys/consent.json</code></pre>
 <h2>5. Link to your hotkey</h2>
 <p>You can link up to 7 nodes, on any OS. Unpack the link page, serve it on your own machine, and open it:</p>
-<pre><code>tar -xzf pipe-link-page-&lt;v&gt;.tar.gz &amp;&amp; cd pipe-link-page
+<pre><code>tar -xzf bwos-link-page-&lt;v&gt;.tar.gz &amp;&amp; cd bwos-link-page
 python3 -m http.server 8000 --bind localhost</code></pre>
 <p>Open <code>http://localhost:8000/</code>. Paste the nodes' link URLs and choose <strong>test</strong>. Connect the wallet that holds your <strong>hotkey</strong>. Keep "inline" ticked, then sign and commit. Each node then hands its consent to every validator over its probe sessions. You send us nothing. On Linux you can use <code>bwos bind</code> instead.</p>
 <h2>6. Get a peer</h2>
 <p>A node is paid for capacity only with a BGP session to a node of another UID. Make your peer card (the release guide, section 5). Post it in a <a href="https://github.com/transitfabric/releases/issues/new?template=peering-request.yml">Peering request</a> Issue. Take <code>transit_peers[0]</code> from <code>network.json</code> as your peer. Our node adds yours by itself once validators list your node. It takes one node per UID, first come. Or swap cards with another tester. At least one side must be public.</p>
 <h2>7. Run, then check</h2>
 <ul>
+<li><code>bwos doctor --json</code> on the node: every check <code>ok</code>. If it names a fix, do that first.</li>
 <li>In <code>NodeStats</code>: <code>probe_peers[].session: true</code> and <code>forwarded_sent</code> above 0.</li>
 <li>In the log: <code>SessionUp</code> with your peer, and <code>TableApplied</code>.</li>
 <li>On chain: <code>bwos-validator chain-status --network test --netuid 611</code> shows your <code>inline_nodes</code> and the validators' weights for your UID.</li>
@@ -47,7 +48,7 @@ python3 -m http.server 8000 --bind localhost</code></pre>
 </ul>
 <p>First weights come one to two windows after you are up, peered and linked. A window is about 72 minutes. Expect about 220 Mb/s per flow on cloud VMs.</p>
 <h2>Problems</h2>
-<p>Open an <a href="https://github.com/transitfabric/releases/issues">Issue</a>. Give the version (<code>bwos-node --version</code>), your path, and logs with keys removed. For security findings, or ways to earn more than you carry, use <a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a>. Never send a private key, seed phrase or wallet file.</p>
+<p>Open an <a href="https://github.com/transitfabric/releases/issues">Issue</a>. Use the Bug report form: give the version (<code>bwos-node --version</code>), your path, the output of <code>bwos doctor --json</code> and the <code>issue-body.md</code> that <code>bwos report</code> writes. It removes keys and addresses. For security findings, or ways to earn more than you carry, use <a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a>. Never send a private key, seed phrase or wallet file.</p>
 </main>
 <footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
 <a href="https://github.com/transitfabric/releases/releases">Releases</a> ·

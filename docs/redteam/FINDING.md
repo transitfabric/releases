@@ -2,7 +2,7 @@
 title: "One line: what breaks, and who gains"
 severity_claimed: medium        # critical | high | medium | low (tiers on https://transitfabric.xyz/bounty.html)
 component: scoring              # scoring | measurement | receipts | identity | encoding | node | validator | solver | cli | link-page | docs | other
-version: v0.1.0-tester.2        # the release tag, or the red-team pack tag (redteam-pack-<sha>) for a simulator finding
+version: v0.1.0-tester.3        # the release tag, or the red-team pack tag (redteam-pack-<sha>) for a simulator finding
 claim_address:                  # optional: your ss58 address, if you registered on https://transitfabric.xyz/claim.html
 reproduction: sim               # sim | testnet | none
 ---

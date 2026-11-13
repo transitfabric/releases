@@ -44,7 +44,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: The release tag, such as v0.1.0-tester.2, or the pack tag (redteam-pack-<sha>) for a simulator finding.
+      description: The release tag, such as v0.1.0-tester.3, or the pack tag (redteam-pack-<sha>) for a simulator finding.
     validations:
       required: true
   - type: input
