@@ -44,3 +44,7 @@ Full rules for agents: https://transitfabric.xyz/AGENTS.md
 - [Threat model, raw](https://transitfabric.xyz/redteam/threat-model.md)
 - [Scoring spec, raw](https://transitfabric.xyz/redteam/scoring.md)
 - [CONTRIBUTING.md](https://github.com/transitfabric/releases/blob/main/CONTRIBUTING.md): documentation fixes are welcome as pull requests.
+
+## Findings sandbox (no GitHub account)
+
+- [Upload page](https://submit.transitfabric.xyz): private, no account, no bounty credit. Agents: `curl -sS -F file=@finding.md https://submit.transitfabric.xyz/upload` (optional `-F attachment=@repro.zip`). The reply is JSON with a receipt ID. Limit: 10 uploads a day per address.

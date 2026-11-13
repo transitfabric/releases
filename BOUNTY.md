@@ -53,7 +53,7 @@ This is a community program for early testers. It isn't a big-money bounty.
 - **Read first:** the [red-team pack](https://transitfabric.xyz/redteam/index.html) has the specs, the threat model and the simulator, and [how to reproduce a finding in the simulator](https://transitfabric.xyz/redteam/simulator.html).
 - **Submit findings** with the [finding template](https://transitfabric.xyz/redteam/FINDING.md). A bug goes in through the Finding [Issue form](https://github.com/transitfabric/releases/issues/new/choose). A security finding goes in privately, through the [private advisory](https://github.com/transitfabric/releases/security/advisories/new) or its API (`POST /repos/transitfabric/releases/security-advisories/reports`).
 - **Large artifacts** (simulator output, logs, captures) go in as a zip attachment. Remove keys, seed phrases, machine addresses and hostnames first.
-- An **anonymous upload sandbox** is coming, for people without a GitHub account. It earns no credit.
+- **No GitHub account?** Upload your finding to the private [findings sandbox](https://submit.transitfabric.xyz) (markdown up to 1 MB, optional zip up to 10 MB). It earns no credit. For agents: `curl -sS -F file=@finding.md https://submit.transitfabric.xyz/upload`.
 
 ## Rules
 - Testnet only. Use your own nodes, hotkeys and test TAO.

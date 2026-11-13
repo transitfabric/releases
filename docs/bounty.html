@@ -56,7 +56,7 @@
 <li><strong>Read first:</strong> the <a href="redteam/index.html">red-team pack</a> has the specs, the threat model and the simulator, and <a href="redteam/simulator.html">how to reproduce a finding in the simulator</a>.</li>
 <li><strong>Submit findings</strong> with the <a href="redteam/FINDING.md">finding template</a>. A bug goes in through the Finding <a href="https://github.com/transitfabric/releases/issues/new/choose">Issue form</a>. A security finding goes in privately, through the <a href="https://github.com/transitfabric/releases/security/advisories/new">private advisory</a> or its API (<code>POST /repos/transitfabric/releases/security-advisories/reports</code>).</li>
 <li><strong>Large artifacts</strong> (simulator output, logs, captures) go in as a zip attachment. Remove keys, seed phrases, machine addresses and hostnames first.</li>
-<li>An <strong>anonymous upload sandbox</strong> is coming, for people without a GitHub account. It earns no credit.</li>
+<li><strong>No GitHub account?</strong> Upload your finding to the private <a href="https://submit.transitfabric.xyz">findings sandbox</a> (markdown up to 1 MB, optional zip up to 10 MB). It earns no credit. For agents: <code>curl -sS -F file=@finding.md https://submit.transitfabric.xyz/upload</code>.</li>
 </ul>
 <h2>Rules</h2>
 <ul>

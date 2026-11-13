@@ -82,3 +82,7 @@ https://transitfabric.xyz/redteam/index.html holds the scoring, measurement, rec
 - Testnet and your own nodes only. Don't test against anyone else's machines, and don't flood the testnet.
 - Don't disrupt other testers beyond the minimum needed to show a problem.
 - No more than 5 open unverified findings per account.
+
+## Findings sandbox (no GitHub account)
+
+- [Upload page](https://submit.transitfabric.xyz): private, no account, no bounty credit. Agents: `curl -sS -F file=@finding.md https://submit.transitfabric.xyz/upload` (optional `-F attachment=@repro.zip`). The reply is JSON with a receipt ID. Limit: 10 uploads a day per address.
