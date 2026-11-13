@@ -3,5 +3,9 @@
   "version": "0.1.0-tester.3",
   "description": "Agent skill for Transit Fabric testnet (subnet 611): install and check a node, run bwos doctor, file a redacted bug report. Testnet only.",
   "homepage": "https://transitfabric.xyz",
-  "repository": "https://github.com/transitfabric/releases"
+  "repository": "https://github.com/transitfabric/releases",
+  "author": {
+    "name": "Transit Fabric",
+    "url": "https://transitfabric.xyz"
+  }
 }
