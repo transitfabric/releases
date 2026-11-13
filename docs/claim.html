@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; style-src 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Claim credit | Transit Fabric testnet 611</title><link rel="stylesheet" href="style.css"></head><body>
+<header><a class="brand" href="index.html">Transit Fabric releases</a>
+<nav><a href="index.html">Home</a><a href="quickstart.html">Quick start</a><a href="known-limits.html">Known limits</a><a href="bounty.html">Bounty</a><a href="redteam/index.html">Red team</a><a href="claim.html" aria-current="page">Claim credit</a><a href="leaderboard.html">Leaderboard</a></nav></header>
+<main>
+<h1>Claim credit: register your address</h1>
+<p>Register once. You sign a short message with a wallet, and we tie your GitHub account to that address, so points and any tips go to the right place. The <a href="bounty.html">bounty</a> is still opening soon, and registering now is fine.</p>
+<p class="big">Signing moves no funds. This page never creates a transaction.</p>
+<p>The page asks your wallet to sign a text message. It makes no network request, sends nothing anywhere, and stores nothing. Use an address you made for testnet. A signed message can't spend anything, but there's no reason to link a wallet that holds real funds.</p>
+<noscript><p class="warn">This page needs JavaScript. Use the btcli way below instead.</p></noscript>
+
+<h2>1. Your GitHub username</h2>
+<label for="gh">GitHub username (a GitHub account is required for credit)</label>
+<input id="gh" type="text" autocomplete="off" spellcheck="false" maxlength="39" placeholder="octocat">
+
+<h2>2. Connect a wallet</h2>
+<p>This uses a browser wallet extension that supports the Polkadot{.js} extension API (the Polkadot{.js} extension, Talisman, SubWallet and others).</p>
+<button class="btn" id="connect" type="button">Connect wallet</button>
+<label for="acct">Account</label>
+<select id="acct" disabled><option value="">No wallet connected</option></select>
+<p id="status" role="status"></p>
+
+<h2>3. Sign</h2>
+<label for="msg">The exact message you will sign</label>
+<textarea id="msg" rows="3" readonly></textarea>
+<button class="btn" id="sign" type="button" disabled>Sign message</button>
+
+<h2>4. Send your claim</h2>
+<label for="claim">Claim block</label>
+<textarea id="claim" rows="6" readonly placeholder="Appears here after you sign."></textarea>
+<p id="check" role="status"></p>
+<button class="btn" id="copy" type="button" disabled>Copy claim block</button>
+<a class="btn" id="issue" href="#" hidden rel="noopener">Open a prefilled Issue</a>
+<p>The button opens a new Issue titled "Bounty registration" with these fields filled in. You need to be signed in to GitHub. Anyone can read it, and it holds only the message, your public address and the signature. If you want it private, paste the claim block into a <a href="https://github.com/transitfabric/releases/security/advisories/new">private advisory</a> instead.</p>
+
+<h2>Sign with btcli instead</h2>
+<p>If you'd rather not use a browser wallet, <code>btcli</code> can sign the same message. This was checked with btcli 9.23.2. Run <code>btcli wallet sign --help</code> to see the options in your version.</p>
+<pre><code id="btcli">btcli wallet sign --wallet-name &lt;your wallet&gt; --no-use-hotkey --message '&lt;message from step 3&gt;'</code></pre>
+<ul>
+<li><code>--no-use-hotkey</code> signs with the wallet's coldkey, which btcli will ask you to unlock locally. Without it btcli asks which key to use. To sign with a hotkey, use <code>--use-hotkey --hotkey &lt;name&gt;</code>.</li>
+<li>Get the address first (<code>btcli wallet list</code>, or your wallet) and put it in the message. The message must carry the address that signs. btcli prints it again as "Signer address".</li>
+<li>Put the signature in the claim block as <code>signature: 0x...</code>. btcli prints it without the <code>0x</code>, and either form is accepted.</li>
+<li>Check it yourself with <code>btcli wallet verify --message '&lt;message&gt;' --signature &lt;sig&gt; --address &lt;ss58&gt;</code>. btcli signs the same way as the browser wallet, so both give a signature that the maintainers' <a href="https://github.com/transitfabric/releases/blob/main/tools/verify-claim.mjs">verify-claim</a> tool accepts.</li>
+</ul>
+<p class="warn">Never type a seed phrase, a mnemonic or a private key into this page, an Issue or a chat. Signing happens in your wallet or in btcli on your own machine.</p>
+</main>
+<footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
+<a href="https://github.com/transitfabric/releases/releases">Releases</a> ·
+<a href="https://github.com/transitfabric/releases/issues">Issues</a> ·
+<a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a></footer>
+<script src="https://cdn.jsdelivr.net/npm/@polkadot/util@14.0.3/bundle-polkadot-util.js" integrity="sha384-VqvFgkO/E6mXTxumDtVf6INKhwFfOH+1md0eGhXID+h/Il9BDJHk2rF7zJaKbEJa" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@polkadot/util-crypto@14.0.3/bundle-polkadot-util-crypto.js" integrity="sha384-7+Zbf8RFroMun8ExBMXiymbq8cn5gfjfa9epqHP6X0Ex5yWA2DLrfJj4QaMJ04Qd" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@polkadot/extension-dapp@0.64.1/bundle-polkadot-extension-dapp.js" integrity="sha384-5DCC5PKTSQSr+cI2ewWZoyr23dcChpol7x82U8jaX92zyQJ3t657R3dTG61YcBmA" crossorigin="anonymous"></script>
+<script src="claim.js"></script>
+</body></html>

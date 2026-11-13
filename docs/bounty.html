@@ -2,10 +2,10 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bounty | Transit Fabric testnet 611</title><link rel="stylesheet" href="style.css"></head><body>
 <header><a class="brand" href="index.html">Transit Fabric releases</a>
-<nav><a href="index.html">Home</a><a href="quickstart.html">Quick start</a><a href="known-limits.html">Known limits</a><a href="bounty.html">Bounty</a><a href="leaderboard.html">Leaderboard</a></nav></header>
+<nav><a href="index.html">Home</a><a href="quickstart.html">Quick start</a><a href="known-limits.html">Known limits</a><a href="bounty.html">Bounty</a><a href="redteam/index.html">Red team</a><a href="claim.html">Claim credit</a><a href="leaderboard.html">Leaderboard</a></nav></header>
 <main>
 <h1>Transit Fabric testnet bug bounty and Founding Tester program</h1>
-<p class="notice"><strong>Opening soon.</strong> The program opens with v0.1.0-tester.3, which adds structured bug reports (<code>bwos doctor</code>, <code>bwos report</code>) and a red-team pack (the scoring, measurement and threat-model specs, plus the simulator). Points start counting on the opening date, which we'll announce here and in the Transit Fabric Discord. Bug and security reports are welcome now. Please send them the same way.</p>
+<p class="notice"><strong>Opening soon.</strong> The program opens with v0.1.0-tester.3, which adds structured bug reports (<code>bwos doctor</code>, <code>bwos report</code>) and a red-team pack (the scoring, measurement and threat-model specs, plus the simulator). The <a href="redteam/index.html">red-team pack</a> is already published. Points start counting on the opening date, which we'll announce here and in the Transit Fabric Discord. Bug and security reports are welcome now. Please send them the same way.</p>
 <p>Transit Fabric is a Bittensor subnet for a decentralized network fabric. It is testing on Bittensor <strong>testnet, subnet 611</strong>. We reward early testers who find bugs and exploits in the released software and the testnet network, and who keep nodes and solvers running.</p>
 <h2>Scope</h2>
 <ul>
@@ -33,7 +33,7 @@
 </table></div>
 <ul>
 <li><strong>+25%</strong> for a working reproduction (a sim or a testnet demonstration) plus a suggested fix.</li>
-<li>The first valid report of an issue earns the points. Duplicates, and issues already listed as open in our threat model, get credit only.</li>
+<li>The first valid report of an issue earns the points. Issues already listed as open in our threat model get credit only, unless you show a new exploit path.</li>
 <li>We assign the tier and the points, and we explain our reasoning.</li>
 </ul>
 <h3>Points for taking part</h3>
@@ -50,11 +50,22 @@
 <li><strong>Ordinary bugs:</strong> open a public <a href="https://github.com/transitfabric/releases/issues">Issue</a> on the same repository.</li>
 <li>Include the version, the steps to reproduce, what you expected and what happened, and logs with addresses and keys removed.</li>
 </ul>
+<h2>Registering and submitting</h2>
+<ul>
+<li><strong>Register once</strong> on the <a href="claim.html">claim page</a>. You sign one short message with a wallet (signing moves no funds), and we tie your GitHub account to that address. A GitHub account is required for credit.</li>
+<li><strong>Read first:</strong> the <a href="redteam/index.html">red-team pack</a> has the specs, the threat model and the simulator, and <a href="redteam/simulator.html">how to reproduce a finding in the simulator</a>.</li>
+<li><strong>Submit findings</strong> with the <a href="redteam/FINDING.md">finding template</a>. A bug goes in through the Finding <a href="https://github.com/transitfabric/releases/issues/new/choose">Issue form</a>. A security finding goes in privately, through the <a href="https://github.com/transitfabric/releases/security/advisories/new">private advisory</a> or its API (<code>POST /repos/transitfabric/releases/security-advisories/reports</code>).</li>
+<li><strong>Large artifacts</strong> (simulator output, logs, captures) go in as a zip attachment. Remove keys, seed phrases, machine addresses and hostnames first.</li>
+<li>An <strong>anonymous upload sandbox</strong> is coming, for people without a GitHub account. It earns no credit.</li>
+</ul>
 <h2>Rules</h2>
 <ul>
 <li>Testnet only. Use your own nodes, hotkeys and test TAO.</li>
+<li>Points need a reproduction against a named version (a release tag, or the red-team pack tag for a simulator finding).</li>
+<li>Duplicates and reports we can't verify are closed with no points.</li>
+<li>At most 5 open unverified findings per account. Wait for a verdict before you send more.</li>
 <li>Don't disrupt other testers beyond the minimum needed to demonstrate an issue. Stop and report as soon as you've shown it.</li>
-<li>The first valid report of an issue gets the reward. Duplicates don't.</li>
+<li>The first valid report of an issue wins the reward.</li>
 <li>Disclosure: keep security findings private until they're fixed. After that we give public credit, with your permission.</li>
 <li>We add a regression test and a threat-model entry for every paid finding.</li>
 </ul>

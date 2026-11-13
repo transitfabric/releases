@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Red-team pack | Transit Fabric red-team pack</title><meta name="description" content="Red-team pack"><link rel="stylesheet" href="../style.css"></head><body>
+<header><a class="brand" href="../index.html">Transit Fabric releases</a>
+<nav><a href="../index.html">Home</a><a href="../quickstart.html">Quick start</a><a href="../known-limits.html">Known limits</a><a href="../bounty.html">Bounty</a><a href="../redteam/index.html">Red team</a><a href="../claim.html">Claim credit</a><a href="../leaderboard.html">Leaderboard</a></nav></header>
+<main>
+<h1 id="red-team-pack">Red-team pack</h1>
+<p>Everything you need to look for ways to earn more than you carry on Transit Fabric (Bittensor testnet, subnet 611), and to show them working. The pack was taken from the source repository at commit <code>91be12e</code>.</p>
+<p>Read the bounty page first: it has the scope, the out-of-scope list, the tiers and the rules. Register once on the claim page so credit goes to your address.</p>
+<h2 id="what-is-in-the-pack">What is in the pack</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>What</th>
+<th>Why you want it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="scoring.html">Scoring spec</a> (<a href="scoring.html">.md</a>)</td>
+<td>How emission shares are computed, with every parameter and its default. The place to look for something worth gaming.</td>
+</tr>
+<tr>
+<td><a href="measurement.html">Measurement spec</a> (<a href="measurement.html">.md</a>)</td>
+<td>What validators probe and test, and how results are pooled.</td>
+</tr>
+<tr>
+<td><a href="receipts.html">Receipts spec</a> (<a href="receipts.html">.md</a>)</td>
+<td>How bytes are credited, and what a relay can and can&#39;t claim.</td>
+</tr>
+<tr>
+<td><a href="capacity-bonds.html">Capacity bonds spec</a> (<a href="capacity-bonds.html">.md</a>)</td>
+<td>The bonds that back declared capacity.</td>
+</tr>
+<tr>
+<td><a href="identity.html">Identity spec</a> (<a href="identity.html">.md</a>)</td>
+<td>Node keys, hotkeys, bindings and consents.</td>
+</tr>
+<tr>
+<td><a href="encoding.html">Encoding spec</a> (<a href="encoding.html">.md</a>)</td>
+<td>Canonical encoding and domain-separated signatures.</td>
+</tr>
+<tr>
+<td><a href="threat-model.html">Threat model</a> (<a href="threat-model.html">.md</a>)</td>
+<td>Every attack we have written down, its mitigation and its status. Read it before you file.</td>
+</tr>
+<tr>
+<td><a href="whitepaper.html">Whitepaper</a> (<a href="whitepaper.html">.md</a>)</td>
+<td>The design in one document.</td>
+</tr>
+<tr>
+<td><a href="simulator.html">The simulator</a></td>
+<td><code>bwos-sim</code>, static binaries for Linux x86_64 and aarch64, with checksums and sample output. A walk-through of reproducing a finding in it.</td>
+</tr>
+<tr>
+<td><a href="FINDING.md">Finding template</a></td>
+<td>The format we want findings in. The &quot;Finding&quot; Issue form has the same fields.</td>
+</tr>
+</tbody></table></div>
+<p>The simulator binaries are assets of the GitHub release <a href="https://github.com/transitfabric/releases/releases/tag/redteam-pack-91be12e"><code>redteam-pack-91be12e</code></a>, a pre-release. Download them and check the <code>SHA256SUMS</code> file before you run anything.</p>
+<h2 id="what-is-in-scope">What is in scope</h2>
+<p>The scope, the out-of-scope items and the reward tiers are on the bounty page. In short: the released software, the incentive mechanism as it runs on subnet 611, and the design documents. Testnet only. Never use mainnet keys or real TAO.</p>
+<h2 id="open-and-accepted-threat-model-items">Open and accepted threat-model items</h2>
+<p>The threat model lists attacks we already know about. Items marked open or accepted are known: they earn credit only if you show a new exploit path or a bigger payoff. Items marked mitigated are fair game: if you break a mitigation, that is a finding. There are 66 open and 5 accepted items in the threat model at this commit.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Status</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="threat-model.html#T38">T38</a></td>
+<td>open</td>
+<td>Nothing fills ProbeResultBatch.endpoints in the daemon yet, so in production no node has an underlay</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T39">T39</a></td>
+<td>open</td>
+<td>Nothing fills ProbeResultBatch.endpoints in the daemon yet, so in production no node has an underlay</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T41">T41</a></td>
+<td>open</td>
+<td>Rented burst capacity</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T42">T42</a></td>
+<td>open</td>
+<td>Team-test manipulation</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T46">T46</a></td>
+<td>open</td>
+<td>SRG griefing</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T47">T47</a></td>
+<td>accepted</td>
+<td>Inherited carrier diversity</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T58">T58</a></td>
+<td>accepted</td>
+<td>Signed-input capture</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T60">T60</a></td>
+<td>open</td>
+<td>Equivocating quorum</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T62">T62</a></td>
+<td>open</td>
+<td>Stale evidence re-signed</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T67">T67</a></td>
+<td>open</td>
+<td>Sample favouring and blame by omission</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T68">T68</a></td>
+<td>open</td>
+<td>Forged digests and spoofed sources</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T69">T69</a></td>
+<td>open</td>
+<td>False reports</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T70">T70</a></td>
+<td>open</td>
+<td>The reveal names no egress</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T71">T71</a></td>
+<td>open</td>
+<td>Omission and withholding blame the hop behind</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T72">T72</a></td>
+<td>open</td>
+<td>The egress knows every key</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T73">T73</a></td>
+<td>open</td>
+<td>The two ends have a veto</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T74">T74</a></td>
+<td>open</td>
+<td>Determinism</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T78">T78</a></td>
+<td>open</td>
+<td>Another process of the same user reaches the agent&#39;s control socket or its keychain entry and acts a</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T79">T79</a></td>
+<td>open</td>
+<td>The owner is tricked into importing a hotkey, or a coldkey, into the agent</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T80">T80</a></td>
+<td>open</td>
+<td>The binding request is altered between export and signing, binding the node key to another hotkey</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T82">T82</a></td>
+<td>open</td>
+<td>Underlay ambiguity grief</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T87">T87</a></td>
+<td>open</td>
+<td>Anchoring jump</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T89">T89</a></td>
+<td>accepted</td>
+<td>State tampering</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T90">T90</a></td>
+<td>open</td>
+<td>Forged agreed underlay</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T94">T94</a></td>
+<td>open</td>
+<td>A node gives its probe sessions priority over real traffic, and looks better to vantage</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T105">T105</a></td>
+<td>open</td>
+<td>Test target not bound to the endpoint</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T107">T107</a></td>
+<td>open</td>
+<td>Cohort ceilings and chunk steering</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T113">T113</a></td>
+<td>open</td>
+<td>(a) A late-queue node started at its last chance with three on 31-62% of tests, so T42&#39;s one-collude</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T116">T116</a></td>
+<td>open</td>
+<td>(a) Cohort credit is kept for 8 history entries, but a cohort falls due about once per 2.5 windows,</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T123">T123</a></td>
+<td>open</td>
+<td>Restore crash loop</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T125">T125</a></td>
+<td>open</td>
+<td>A co-located group&#39;s pool is the max over its chunk cohorts of each cohort&#39;s lower median of few sam</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T126">T126</a></td>
+<td>open</td>
+<td>(a) Rider keys split across many UIDs get one front cohort turn per UID, charged to the fleet too</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T130">T130</a></td>
+<td>open</td>
+<td>Latch split brain</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T131">T131</a></td>
+<td>open</td>
+<td>Hop receipts from real counters and background from receipt runs</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T135">T135</a></td>
+<td>open</td>
+<td>Same-block clone griefing</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T140">T140</a></td>
+<td>open</td>
+<td>Perturbed production leech</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T143">T143</a></td>
+<td>open</td>
+<td>Damping shadows a node from validators</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T144">T144</a></td>
+<td>open</td>
+<td>Damage spreads past the flapping link</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T145">T145</a></td>
+<td>open</td>
+<td>Public canary pairs</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T146">T146</a></td>
+<td>open</td>
+<td>A validator&#39;s plan is secret from nodes, not from the validator</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T147">T147</a></td>
+<td>open</td>
+<td>Splitting above the canary weight cap</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T148">T148</a></td>
+<td>open</td>
+<td>Canary packet shape</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T153">T153</a></td>
+<td>open</td>
+<td>Mechanism 0 credits transit on current_prod_table, not the table as updated</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T157">T157</a></td>
+<td>open</td>
+<td>Validators holding more than a third of stake can withhold attestations and stop updates</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T200">T200</a></td>
+<td>open</td>
+<td>The participation controller ratchets</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T201">T201</a></td>
+<td>open</td>
+<td>Quality drag on the controller</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T202">T202</a></td>
+<td>open</td>
+<td>A teammate&#39;s zero report</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T203">T203</a></td>
+<td>accepted</td>
+<td>The own-fleet rule avoided with a second coldkey</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T204">T204</a></td>
+<td>open</td>
+<td>k depends on the full history</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T205">T205</a></td>
+<td>open</td>
+<td>Too few independent recorders</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T165">T165</a></td>
+<td>open</td>
+<td>Peer-load collusion</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T167">T167</a></td>
+<td>open</td>
+<td>Hidden slices identified</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T169">T169</a></td>
+<td>open</td>
+<td>Peer pool and duty</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T170">T170</a></td>
+<td>open</td>
+<td>usable over-credits</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T171">T171</a></td>
+<td>open</td>
+<td>Long burst credits</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T172">T172</a></td>
+<td>open</td>
+<td>The coordinator leaks</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T173">T173</a></td>
+<td>open</td>
+<td>Flood framing</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T217">T217</a></td>
+<td>open</td>
+<td>Hidden-slice tells and relay drops</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T187">T187</a></td>
+<td>open</td>
+<td>Validator site collusion</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T189">T189</a></td>
+<td>open</td>
+<td>Unusable capacity paid at a scarce price</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T190">T190</a></td>
+<td>open</td>
+<td>Herding: every operator moves to the same scarce region at once, on the same price map, and prices o</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T193">T193</a></td>
+<td>open</td>
+<td>Burst-rented capacity in a scarce region</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T195">T195</a></td>
+<td>open</td>
+<td>Atlas anchor forgery</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T197">T197</a></td>
+<td>open</td>
+<td>Carry abuse</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T221">T221</a></td>
+<td>open</td>
+<td>Version split</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T226">T226</a></td>
+<td>open</td>
+<td>ASN grinding and churn by recommit</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T257">T257</a></td>
+<td>open</td>
+<td>Placement steering</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T259">T259</a></td>
+<td>open</td>
+<td>Allocation starvation</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T230">T230</a></td>
+<td>open</td>
+<td>Selective serving</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T264">T264</a></td>
+<td>open</td>
+<td>A validator feeds a solver a forged snapshot</td>
+</tr>
+<tr>
+<td><a href="threat-model.html#T300">T300</a></td>
+<td>accepted</td>
+<td>Unmatched probe sessions feed batches</td>
+</tr>
+</tbody></table></div>
+<h2 id="how-to-file">How to file</h2>
+<ol>
+<li>Reproduce it against a named version. Points need a reproduction.</li>
+<li>Check the threat model above and known limits. The first valid report wins, and duplicates are closed with no points.</li>
+<li>Use the <a href="FINDING.md">finding template</a>. A bug goes in through the &quot;Finding&quot; Issue form. A security finding or exploit goes in privately, through the advisory or its API. Large artifacts go in as a zip attachment.</li>
+</ol>
+
+</main>
+<footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
+<a href="https://github.com/transitfabric/releases/releases">Releases</a> ·
+<a href="https://github.com/transitfabric/releases/issues">Issues</a> ·
+<a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a></footer>
+</body></html>

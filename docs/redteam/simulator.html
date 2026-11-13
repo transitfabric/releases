@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The simulator, and how to reproduce a finding in it | Transit Fabric red-team pack</title><meta name="description" content="The simulator, and how to reproduce a finding in it"><link rel="stylesheet" href="../style.css"></head><body>
+<header><a class="brand" href="../index.html">Transit Fabric releases</a>
+<nav><a href="../index.html">Home</a><a href="../quickstart.html">Quick start</a><a href="../known-limits.html">Known limits</a><a href="../bounty.html">Bounty</a><a href="../redteam/index.html">Red team</a><a href="../claim.html">Claim credit</a><a href="../leaderboard.html">Leaderboard</a></nav></header>
+<main>
+<h1 id="the-simulator-and-how-to-reproduce-a-finding-in-it">The simulator, and how to reproduce a finding in it</h1>
+<p><code>bwos-sim</code> is the incentive simulator we use to test the scoring rules against rational, adversarial operators. This page covers what you can download, how to run it, how to read its output and how to turn a finding into a simulator scenario. It was built from source commit <code>91be12e</code>, the same commit as the specs in this pack.</p>
+<h2 id="download-and-check">Download and check</h2>
+<p>The files are assets of the GitHub pre-release <a href="https://github.com/transitfabric/releases/releases/tag/redteam-pack-91be12e"><code>redteam-pack-91be12e</code></a>:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bwos-sim-linux-x86_64</code></td>
+<td>Static binary (musl), Linux x86_64</td>
+</tr>
+<tr>
+<td><code>bwos-sim-linux-aarch64</code></td>
+<td>Static binary (musl), Linux aarch64</td>
+</tr>
+<tr>
+<td><code>sim_50_windows.csv</code>, <code>sim_50_windows.svg</code>, <code>sim_50_windows.txt</code></td>
+<td>The sample output of <code>make sim</code>: the 50-window CSV, the chart, and the console report</td>
+</tr>
+<tr>
+<td><code>SHA256SUMS</code></td>
+<td>Checksums of all of the above</td>
+</tr>
+</tbody></table></div>
+<p>There are no builds for macOS or Windows. On those, run it in a Linux container or VM.</p>
+<pre><code class="language-sh">mkdir bwos-sim-pack &amp;&amp; cd bwos-sim-pack
+gh release download redteam-pack-91be12e --repo transitfabric/releases
+# or download each file from the release page by hand
+sha256sum -c SHA256SUMS            # every line must say OK; stop if one does not
+chmod +x bwos-sim-linux-x86_64     # use the -aarch64 file on an ARM machine
+</code></pre>
+<p>The release is not signed yet, so also compare the hash of <code>SHA256SUMS</code> with the one in our announcement.</p>
+<h2 id="run-it">Run it</h2>
+<p><code>bwos-sim</code> has four options. <code>--help</code> isn&#39;t recognised: any unknown argument prints the usage line and exits with status 2.</p>
+<pre><code>usage: bwos-sim [--windows N] [--csv path.csv] [--chart path.svg] [--flood]
+</code></pre>
+<ul>
+<li><code>--windows N</code>: how many windows to simulate, 1 to 100000. The default is 50.</li>
+<li><code>--csv path.csv</code>: write the per-window report.</li>
+<li><code>--chart path.svg</code>: write the per-window chart.</li>
+<li><code>--flood</code>: run only the schedule-flood scenarios in full (the worst of 3 seeds over 4 windows). It prints a line per scenario and exits 1 if a bound fails. It is slow: allow a good while.</li>
+</ul>
+<p><code>make sim</code> in the source repository runs exactly this, and the sample output in the release comes from it:</p>
+<pre><code class="language-sh">./bwos-sim-linux-x86_64 --windows 50 --csv out.csv --chart out.svg
+</code></pre>
+<p>It has no randomness and reads no input, so the same binary gives the same bytes. Compare your <code>out.csv</code> with the release&#39;s <code>sim_50_windows.csv</code> to check your run. The run takes a few minutes: it prints the strategy table, then runs every adversarial scenario one after another.</p>
+<h2 id="read-the-output">Read the output</h2>
+<p>The console report has two parts.</p>
+<p><strong>1. Strategies.</strong> The simulator runs a fixed population for the windows you asked for:</p>
+<ul>
+<li>8 honest operators, 1000 Mbps each, declaring what they have;</li>
+<li>an overclaimer, declaring twice its real 1000 Mbps;</li>
+<li>a sybil splitter, one 1000 Mbps box split across 3 UIDs;</li>
+<li>a canary-only operator, which serves probes perfectly and drops 80% of paid traffic;</li>
+<li>a self-dealer, generating 1000 Mbps of its own traffic.</li>
+</ul>
+<p>Utilisation rises over the run from 30% to 100%. For each kind of strategy, the table prints its <strong>earnings per real Mbps relative to an honest operator</strong>. Honest is 1.00x by definition. A strategy that prints above 1.00x beats honest play, and that is an exploit. In the release&#39;s sample:</p>
+<pre><code>strategy         earnings per real Mbps vs honest
+canary_only        0.03x
+honest             1.00x
+overclaimer        0.80x
+self_dealer        0.30x
+sybil_splitter     0.80x
+</code></pre>
+<p><strong>2. Adversarial scenarios.</strong> After the table comes one line per scenario:</p>
+<pre><code>adversarial scenario     bound  detail
+dust_cap_harvester       ok     dust usage share 6 ppm (raw 3 ppm); dust mech0 share 3 ppm
+</code></pre>
+<p>Each scenario has an attacker payoff and a bound the payoff must not exceed. The <code>bound</code> column says:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Verdict</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ok</code></td>
+<td>The payoff is within the bound.</td>
+</tr>
+<tr>
+<td><code>FAIL</code></td>
+<td>The payoff exceeds the bound. <code>bwos-sim</code> exits with status 1. This is what a finding looks like.</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>A model-only scenario (not scored yet). It reports a bound and gates nothing.</td>
+</tr>
+<tr>
+<td><code>over</code></td>
+<td>A model-only scenario whose payoff is over its bound. Known, and listed in the threat model.</td>
+</tr>
+</tbody></table></div>
+<p>The <code>detail</code> text says what was measured, in ppm (parts per million) or as a ratio to honest. The release sample has 220 scenarios: 204 <code>ok</code>, 6 <code>model</code>, 10 <code>over</code> and no <code>FAIL</code>. The name of a scenario matches the &quot;Sim / Unit test&quot; column of the <a href="threat-model.html">threat model</a>.</p>
+<p><strong>The CSV</strong> has one row per window. The columns are <code>window</code>, <code>alpha_ppm</code> (the weight of capacity against usage in Mechanism 0 pay for that window; the run lowers it from 750000 to 550000), <code>utilization_ppm</code> (30% rising to 100%), then for each of the five strategies its <code>*_share_ppm</code> (its share of the pool, out of 1,000,000) and its <code>*_ratio_vs_honest</code> (earnings per real Mbps against honest). To check an exploit over time, look at the <code>*_ratio_vs_honest</code> columns: a ratio at or above 1 is a problem.</p>
+<p><strong>The SVG</strong> is a stacked chart, &quot;Total Pool Score Share by Agent Type (%)&quot;, one band per strategy across the windows. Open it in a browser. A band that grows against its real capacity is the picture of an exploit.</p>
+<h2 id="write-a-new-adversarial-scenario">Write a new adversarial scenario</h2>
+<p>Here is the plain situation: the scenarios are compiled into the binary, and the source isn&#39;t public yet. You can&#39;t add one yourself today. What you can do is describe it precisely, and we will add it, run it and tell you the numbers. A good description is also the best reproduction for a finding that has no testnet demonstration. Put it in the &quot;Simulator scenario&quot; section of the <a href="FINDING.md">finding template</a>, with these parts:</p>
+<ol>
+<li><strong>Population.</strong> The simulator&#39;s agents have these fields: <code>uid</code>; <code>kind</code>; <code>true_mbps</code> (what the node really has); <code>declared_mbps</code> (what it claims); <code>group</code> (agents in one group are one box or one operator, as in a sybil split); <code>drop_paid_ppm</code> (how much paid traffic it drops, in ppm); <code>self_deal_mbps</code> (traffic it generates for itself); and <code>canary_exempt</code> (it recognises probes and serves them perfectly). Say how many honest agents there are and what the attacker&#39;s agents look like, using those fields. The attacks the simulator models today map onto them: overclaiming (<code>declared_mbps</code> above <code>true_mbps</code>), sybil splitting (several UIDs in one <code>group</code>), canary-only service (<code>drop_paid_ppm</code> with <code>canary_exempt</code>), self-dealing (<code>self_deal_mbps</code>).</li>
+<li><strong>The behaviour.</strong> What the attacker does that an honest operator doesn&#39;t, and in which windows. If it depends on a rule in a spec, cite the section of the <a href="scoring.html">scoring</a> or <a href="measurement.html">measurement</a> spec.</li>
+<li><strong>The payoff.</strong> One number that shows the gain: earnings per real Mbps relative to honest, or a share in ppm, with the honest baseline beside it.</li>
+<li><strong>The bound.</strong> What you think should hold, and why. For most scenarios it is &quot;no better than honest&quot;, 1.00x.</li>
+<li><strong>A prediction.</strong> The number you expect the existing simulator, or the spec&#39;s arithmetic, to give. Work it out by hand from the parameter table in the scoring spec if you can.</li>
+</ol>
+<p>If your scenario is a variation of one the binary already runs, run the binary, find that scenario&#39;s line in the report, and say how yours differs and why the existing bound doesn&#39;t cover it. Quote the line.</p>
+<p>A finding with a scenario in this form earns the +25% for a working reproduction once we have confirmed it. If we can&#39;t reproduce it, it is closed with no points.</p>
+
+</main>
+<footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
+<a href="https://github.com/transitfabric/releases/releases">Releases</a> ·
+<a href="https://github.com/transitfabric/releases/issues">Issues</a> ·
+<a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a></footer>
+</body></html>
