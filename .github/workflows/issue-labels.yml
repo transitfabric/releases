@@ -1,0 +1,33 @@
+# Adds labels an Issue form can't add on its own: `agent-filed` when the "Filed by an agent" box
+# is ticked on a Finding, and `finding` / `bounty-registration` from the form's own heading, in
+# case the filer lacks permission to set labels. The Issue text is read from an environment
+# variable and only compared, never run.
+name: issue-labels
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+          add() { gh issue edit "$NUMBER" --repo "$REPO" --add-label "$1"; }
+          case "$TITLE" in
+            "Bounty registration") add bounty-registration ;;
+            "Finding: "*) add finding ;;
+          esac
+          if printf '%s\n' "$BODY" | grep -qi -- '^- \[x\] Filed by an agent'; then add agent-filed; fi

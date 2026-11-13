@@ -1,0 +1,114 @@
+name: Finding (bug or exploit report)
+description: A reproducible bug or exploit against a named version. Security findings go to the private advisory, not here.
+title: "Finding: "
+labels: ["finding"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Security findings and exploits: do not file them here.** Use "Report a vulnerability" on the Security tab (a private advisory), or the API for agents: `POST /repos/transitfabric/releases/security-advisories/reports`.
+        Use this form for an ordinary bug. Points need a reproduction against a named version. See https://transitfabric.xyz/bounty.html and https://transitfabric.xyz/known-limits.html first.
+        Never include a private key, seed phrase or wallet file. Remove addresses of machines and hostnames from logs. Large artifacts go in as a zip attachment.
+  - type: dropdown
+    id: severity_claimed
+    attributes:
+      label: Severity claimed
+      description: The tiers on the bounty page. We assign the final tier.
+      options:
+        - critical
+        - high
+        - medium
+        - low
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - scoring
+        - measurement
+        - receipts
+        - identity
+        - encoding
+        - node
+        - validator
+        - solver
+        - cli
+        - link-page
+        - docs
+        - other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release tag, such as v0.1.0-tester.2, or the pack tag (redteam-pack-<sha>) for a simulator finding.
+    validations:
+      required: true
+  - type: input
+    id: claim_address
+    attributes:
+      label: Claim address (optional)
+      description: The ss58 address you registered with on https://transitfabric.xyz/claim.html.
+    validations:
+      required: false
+  - type: dropdown
+    id: reproduction
+    attributes:
+      label: Reproduction
+      options:
+        - sim
+        - testnet
+        - none
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What can an attacker do, to whom, and what do they gain?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered and exact, against the version above.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected vs actual
+      description: What the spec or threat model says should happen (cite the section), and what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Who loses and who gains, by how much, at what cost. Say why you claim this tier.
+    validations:
+      required: true
+  - type: textarea
+    id: simulator
+    attributes:
+      label: Simulator scenario (optional)
+      description: Population, attacker behaviour, the payoff you measure and the bound you think should hold. See https://transitfabric.xyz/redteam/simulator.html.
+    validations:
+      required: false
+  - type: textarea
+    id: fix
+    attributes:
+      label: Suggested fix (optional)
+    validations:
+      required: false
+  - type: checkboxes
+    id: agent
+    attributes:
+      label: Filed by an agent
+      options:
+        - label: Filed by an agent
+          required: false

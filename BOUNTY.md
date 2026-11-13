@@ -1,6 +1,6 @@
 # Transit Fabric testnet bug bounty and Founding Tester program
 
-> **Opening soon.** The program opens with v0.1.0-tester.3, which adds structured bug reports (`bwos doctor`, `bwos report`) and a red-team pack (the scoring, measurement and threat-model specs, plus the simulator). Points start counting on the opening date, which we'll announce here and in the Transit Fabric Discord. Bug and security reports are welcome now. Please send them the same way.
+> **Opening soon.** The program opens with v0.1.0-tester.3, which adds structured bug reports (`bwos doctor`, `bwos report`) and a red-team pack (the scoring, measurement and threat-model specs, plus the simulator). The [red-team pack](https://transitfabric.xyz/redteam/index.html) is already published. Points start counting on the opening date, which we'll announce here and in the Transit Fabric Discord. Bug and security reports are welcome now. Please send them the same way.
 
 Transit Fabric is a Bittensor subnet for a decentralized network fabric. It is testing on Bittensor **testnet, subnet 611**. We reward early testers who find bugs and exploits in the released software and the testnet network, and who keep nodes and solvers running.
 
@@ -30,7 +30,7 @@ This is a community program for early testers. It isn't a big-money bounty.
 | Low | Hardening issues, minor bugs, misleading docs | 5 |
 
 - **+25%** for a working reproduction (a sim or a testnet demonstration) plus a suggested fix.
-- The first valid report of an issue earns the points. Duplicates, and issues already listed as open in our threat model, get credit only.
+- The first valid report of an issue earns the points. Issues already listed as open in our threat model get credit only, unless you show a new exploit path.
 - We assign the tier and the points, and we explain our reasoning.
 
 **Points for taking part**
@@ -48,9 +48,19 @@ This is a community program for early testers. It isn't a big-money bounty.
 - **Ordinary bugs:** open a public Issue on the same repository.
 - Include the version, the steps to reproduce, what you expected and what happened, and logs with addresses and keys removed.
 
+## Registering and submitting
+- **Register once** on the [claim page](https://transitfabric.xyz/claim.html). You sign one short message with a wallet (signing moves no funds), and we tie your GitHub account to that address. A GitHub account is required for credit.
+- **Read first:** the [red-team pack](https://transitfabric.xyz/redteam/index.html) has the specs, the threat model and the simulator, and [how to reproduce a finding in the simulator](https://transitfabric.xyz/redteam/simulator.html).
+- **Submit findings** with the [finding template](https://transitfabric.xyz/redteam/FINDING.md). A bug goes in through the Finding [Issue form](https://github.com/transitfabric/releases/issues/new/choose). A security finding goes in privately, through the [private advisory](https://github.com/transitfabric/releases/security/advisories/new) or its API (`POST /repos/transitfabric/releases/security-advisories/reports`).
+- **Large artifacts** (simulator output, logs, captures) go in as a zip attachment. Remove keys, seed phrases, machine addresses and hostnames first.
+- An **anonymous upload sandbox** is coming, for people without a GitHub account. It earns no credit.
+
 ## Rules
 - Testnet only. Use your own nodes, hotkeys and test TAO.
+- Points need a reproduction against a named version (a release tag, or the red-team pack tag for a simulator finding).
+- Duplicates and reports we can't verify are closed with no points.
+- At most 5 open unverified findings per account. Wait for a verdict before you send more.
 - Don't disrupt other testers beyond the minimum needed to demonstrate an issue. Stop and report as soon as you've shown it.
-- The first valid report of an issue gets the reward. Duplicates don't.
+- The first valid report of an issue wins the reward.
 - Disclosure: keep security findings private until they're fixed. After that we give public credit, with your permission.
 - We add a regression test and a threat-model entry for every paid finding.

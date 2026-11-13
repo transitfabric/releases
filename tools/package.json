@@ -1,0 +1,14 @@
+{
+  "name": "transitfabric-verify-claim",
+  "version": "1.0.0",
+  "description": "Checks a Transit Fabric bounty registration claim: an sr25519 or ed25519 signature over the claim message.",
+  "type": "module",
+  "bin": { "verify-claim": "verify-claim.mjs" },
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "@polkadot/keyring": "14.0.3",
+    "@polkadot/util": "14.0.3",
+    "@polkadot/util-crypto": "14.0.3"
+  }
+}

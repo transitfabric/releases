@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Encoding spec | Transit Fabric red-team pack</title><meta name="description" content="Canonical encoding and domain-separated signatures."><link rel="stylesheet" href="../style.css"></head><body>
+<header><a class="brand" href="../index.html">Transit Fabric releases</a>
+<nav><a href="../index.html">Home</a><a href="../quickstart.html">Quick start</a><a href="../known-limits.html">Known limits</a><a href="../bounty.html">Bounty</a><a href="../redteam/index.html">Red team</a><a href="../claim.html">Claim credit</a><a href="../leaderboard.html">Leaderboard</a></nav></header>
+<main>
+<p class="notice">Taken from the Transit Fabric source repository at commit <code>91be12e</code> (<code>91be12ef98b775c7f045124e6b8c686c15439650</code>, main), file <code>docs/specs/encoding.md</code>. Links into the private source tree are shown as plain text. <a href="encoding.md">Raw Markdown</a> · <a href="index.html">Red-team pack</a></p>
+<h1 id="spec-encoding-and-signing-v0">Spec: encoding and signing (v0)</h1>
+<p>Status: draft · Implemented in <code>crates/bwos-core/src/wire.rs</code> · Vectors: <code>testdata/vectors/canonical.json</code></p>
+<h2 id="canonical-json">Canonical JSON</h2>
+<p>All signed or hashed objects use canonical JSON:</p>
+<ol>
+<li>UTF-8, <strong>ASCII-only string contents</strong> in v0 (reject non-ASCII on encode and decode). This avoids escaping differences across implementations.</li>
+<li>Object keys sorted by byte order. Duplicate keys are invalid.</li>
+<li>No insignificant whitespace: separators are <code>,</code> and <code>:</code>.</li>
+<li><strong>Integers only.</strong> No floats anywhere in signed objects. Use integer units: bytes, microseconds (<code>_us</code>), parts per million (<code>_ppm</code>), block numbers. Integers MUST lie in <code>[-2^63, 2^64 - 1]</code> and use the shortest decimal form: no leading zeros, no <code>+</code>, no <code>-0</code>, no exponent.</li>
+<li>Byte strings (keys, hashes, signatures) are lowercase hex without a <code>0x</code> prefix.</li>
+<li>Absent optional fields are omitted, never <code>null</code>.</li>
+<li>HTML characters (<code>&lt;</code>, <code>&gt;</code>, <code>&amp;</code>) are not escaped.</li>
+<li>String escapes are fixed: <code>&quot;</code> → <code>\&quot;</code>, <code>\</code> → <code>\\</code>, U+0008/U+000C/U+000A/U+000D/U+0009 → <code>\b</code> <code>\f</code> <code>\n</code> <code>\r</code> <code>\t</code>, every other control character U+0000–U+001F → <code>\u00xx</code> with **lowercase** hex. <code>/</code> and U+007F are emitted raw. Any other spelling (<code>\/</code>, <code>\u0041</code>, <code>\u001F</code>, <code>\u0008</code>) is non-canonical and rejected on decode. Pinned by the escape vector in <code>canonical.json</code>.</li>
+</ol>
+<h2 id="signing-bytes">Signing bytes</h2>
+<pre><code>signing_bytes(domain, obj) = &quot;BWOS-v0/&quot; || domain || 0x00 || canonical_json(obj_without_signature_fields)
+</code></pre>
+<p>Top-level signature fields (<code>sig</code>, <code>sig_up</code>, <code>sig_down</code>, <code>hotkey_sig</code>) are removed before encoding.</p>
+<p>A hotkey&#39;s sr25519 <code>hotkey_sig</code> on a <code>commitment-manifest</code> may instead be over exactly <code>&lt;Bytes&gt;</code> || <code>signing_bytes</code> || <code>&lt;/Bytes&gt;</code>, the form a browser wallet&#39;s <code>signRaw</code> signs (ADR-0054, <code>identity::verify_sr25519_hotkey_sig</code>). No other wrapping, and no other domain, is accepted (an SS58 <code>node-binding</code> signature is checked nowhere until OQ-131; if it is, the same rule applies). Vectors: <code>testdata/vectors/wallet_link.json</code>.</p>
+<h2 id="domains">Domains</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Object</th>
+<th>Signed by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>node-binding</code></td>
+<td>Hotkey → node keys binding</td>
+<td>Hotkey (sr25519)</td>
+</tr>
+<tr>
+<td><code>wg-binding</code></td>
+<td>Node key → WireGuard key</td>
+<td>Node key (ed25519)</td>
+</tr>
+<tr>
+<td><code>hop-receipt</code></td>
+<td>Hop receipt</td>
+<td>Both hops&#39; node keys</td>
+</tr>
+<tr>
+<td><code>client-receipt</code></td>
+<td>Client delivery receipt</td>
+<td>Client key (ed25519)</td>
+</tr>
+<tr>
+<td><code>probe-result</code></td>
+<td>Probe result batch</td>
+<td>Validator hotkey</td>
+</tr>
+<tr>
+<td><code>route-table</code></td>
+<td>Route table</td>
+<td>Solver hotkey</td>
+</tr>
+<tr>
+<td><code>capacity-declaration</code></td>
+<td>Declared capacity per node</td>
+<td>Operator hotkey</td>
+</tr>
+<tr>
+<td><code>edge-config</code></td>
+<td>Transit Fabric Edge appliance config (edge/provisioning)</td>
+<td>Operator hotkey</td>
+</tr>
+<tr>
+<td><code>link-capability</code></td>
+<td>Link class capabilities (datapath.md)</td>
+<td>Node key</td>
+</tr>
+<tr>
+<td><code>receipt-batch</code></td>
+<td>Batch of hop and client receipts uploaded to validators (<code>receipts.md</code>)</td>
+<td>Node key (ed25519)</td>
+</tr>
+<tr>
+<td><code>bandwidth-voucher</code></td>
+<td>Prepaid or earned $\alpha$ bandwidth quota voucher (<code>receipts.md</code>, <code>ADR-0019</code>)</td>
+<td>VPN Provider / Aggregator key (ed25519)</td>
+</tr>
+<tr>
+<td><code>fleet-enrollment</code></td>
+<td>Prosumer sub-node enrollment into a Fleet Aggregator UID (<code>identity.md</code>, <code>ADR-0019</code>)</td>
+<td>Prosumer node key (ed25519)</td>
+</tr>
+<tr>
+<td><code>private-fabric-seed</code></td>
+<td><strong>Deprecated, reserved (Pass-5 CLI-2).</strong> Formerly derived Private Fabric node &amp; WireGuard seeds from public input, which made the private keys derivable. Nothing produces it any more; it stays listed so the string is never reused for another object</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>node-join-ticket</code></td>
+<td>Self-signed Zero-Config Node Join Ticket (<code>fabric-ticket://&lt;hex&gt;</code>, <code>provisioning.rs</code>, <code>ADR-0022</code>)</td>
+<td>Node key (ed25519)</td>
+</tr>
+<tr>
+<td><code>node-consent</code></td>
+<td>Node key&#39;s consent to be bound to <code>(hotkey, netuid)</code>: proof of possession for <code>node-binding</code> (<code>identity.md</code>, <code>T14</code>)</td>
+<td>Node key (ed25519)</td>
+</tr>
+<tr>
+<td><code>cap-test-ack</code></td>
+<td>Capacity-test delivery acknowledgement: node under test, prober validator, window, validator-chosen <code>test_id</code>, <code>CapTestDigest</code> of the stream and byte count (<code>measurement.md</code>, <code>probe::CapTestAck</code>, <code>RT2-3</code>). Distinct from the raw labels <code>cap-test</code> and <code>cap-test-stream</code> (the <code>0x00</code> terminator separates them)</td>
+<td>Node key of the node under test (ed25519)</td>
+</tr>
+<tr>
+<td><code>link-echo</code></td>
+<td>A node&#39;s echo of a validator&#39;s link probe that reached it from one of its BGP peers (PB-48, <code>probe::LinkEcho</code>): <code>{&quot;v&quot;: 0, &quot;from&quot;: &lt;peer&#39;s node key&gt;, &quot;to&quot;: &lt;this node&#39;s key&gt;, &quot;nonce&quot;: &lt;16-byte hex&gt;}</code>, the nonce the validator&#39;s agent drew. Signed only, never stored; 64 raw signature bytes ride in the reply datagram</td>
+<td>Node key of the echoing node, <code>to</code> (ed25519)</td>
+</tr>
+<tr>
+<td><code>admin-request</code></td>
+<td>Single-use control-plane authorization: admin key, target node, method, path, body SHA-256, timestamp (±300 s), nonce (<code>traffic-verification.md</code> TV-24)</td>
+<td>Operator admin key, or forwarding ingress node key (ed25519)</td>
+</tr>
+<tr>
+<td><code>partner-payment-channel</code></td>
+<td>Signed $\alpha \text{ unstake} \rightarrow \text{TAO} \rightarrow (\text{XMR} \mid \text{BTC-LN} \mid \text{BTC} \mid \text{MYST})$ payment channel order funding zero-KYC partner VPN exits (<code>partner_exits.rs</code>, <code>ADR-0028</code>)</td>
+<td>Client or operator Ed25519 key</td>
+</tr>
+<tr>
+<td><code>node-quarantine-vote</code></td>
+<td>Stake-weighted validator vote to quarantine an <code>fc00::/128</code> node key for universal-consensus network abuse (<code>overlay_web.rs</code>, <code>ADR-0031</code>)</td>
+<td>Validator hotkey (ed25519)</td>
+</tr>
+<tr>
+<td><code>fabric-name-record</code></td>
+<td>Self-certifying <code>.fabric</code> East–West overlay service name &amp; optional static-IP exit gateway binding (<code>overlay_web.rs</code>, <code>ADR-0031</code>)</td>
+<td>Origin node key (ed25519)</td>
+</tr>
+<tr>
+<td><code>attestation-key-pop</code></td>
+<td>The ed25519 key&#39;s proof of possession inside an <code>AttestationKeyRecord</code>. It signs <code>{hotkey, not_after, probe_wg_pub}</code> (<code>probe_wg_pub</code> omitted when absent), so a hotkey can&#39;t claim a key it doesn&#39;t hold. <code>probe_wg_pub</code> must be the X25519 form of the same ed25519 key (<code>measurement.md</code> §Team capacity tests, &quot;Validator identity&quot;, red team RT1, <code>signed::AttestationKeyRecord</code>)</td>
+<td>The attested ed25519 key itself</td>
+</tr>
+<tr>
+<td><code>attestation-key</code></td>
+<td><code>AttestationKeyRecord</code>: SS58 <code>hotkey</code>, <code>ed25519</code> key, <code>not_after</code>, optional <code>probe_wg_pub</code>, <code>attest</code> flag and the <code>ed25519_sig</code> proof of possession, which <code>hotkey_sig</code> covers (<code>signed.rs</code>, ADR-0042, ADR-0039). Its hash is the sealed hash (see Hashing)</td>
+<td>Hotkey (sr25519)</td>
+</tr>
+<tr>
+<td><code>validator-set</code></td>
+<td>Identity hash of a <code>ValidatorSet</code> with <code>attestations</code> stripped (<code>ValidatorSet::hash_hex</code>, ADR-0042). Nothing signs under it</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>validator-set-attestation</code></td>
+<td>A validator&#39;s attestation of a <code>ValidatorSet</code> without its <code>attestations</code>, counted by the current set&#39;s quorum in <code>signed::accept_next_set</code></td>
+<td>Validator attestation key (ed25519)</td>
+</tr>
+<tr>
+<td><code>snapshot-attestation</code></td>
+<td>A validator&#39;s attestation of a topology <code>Snapshot</code> (<code>SignedSnapshot</code>)</td>
+<td>Validator attestation key (ed25519)</td>
+</tr>
+<tr>
+<td><code>table-attestation</code></td>
+<td>A validator&#39;s attestation of a route <code>Table</code> (<code>SignedTable</code>), over the table without the solver&#39;s <code>hotkey_sig</code>. It is never the solver&#39;s <code>route-table</code> bytes (D9)</td>
+<td>Validator attestation key (ed25519)</td>
+</tr>
+<tr>
+<td><code>peer-directory-attestation</code></td>
+<td>A validator&#39;s attestation of a <code>PeerDirectory</code> without its <code>attestations</code></td>
+<td>Validator attestation key (ed25519)</td>
+</tr>
+<tr>
+<td><code>signed-snapshot</code></td>
+<td>Publication domain: object-store key of a whole <code>SignedSnapshot</code>, attestations included. &quot;Latest&quot; is the highest <code>snapshot.window</code> (<code>signed::latest_key</code>, Task 11b)</td>
+<td>— (carries attestations)</td>
+</tr>
+<tr>
+<td><code>signed-table</code></td>
+<td>Publication domain: a whole <code>SignedTable</code>. &quot;Latest&quot; is the highest <code>table.window</code></td>
+<td>— (carries attestations)</td>
+</tr>
+<tr>
+<td><code>signed-directory</code></td>
+<td>Publication domain: a whole <code>PeerDirectory</code>. &quot;Latest&quot; is the highest <code>window</code></td>
+<td>— (carries attestations)</td>
+</tr>
+<tr>
+<td><code>signed-validator-set</code></td>
+<td>Publication domain: a whole <code>ValidatorSet</code>. &quot;Latest&quot; is the highest <code>block</code></td>
+<td>— (carries attestations)</td>
+</tr>
+<tr>
+<td><code>commitment-manifest</code></td>
+<td>The object a hotkey&#39;s one on-chain commitment points at: <code>netuid</code>, <code>hotkey</code>, <code>window</code>, the <code>node-binding</code> hash and an <code>objects</code> map from domain to hash (<code>identity.md</code>, <code>manifest::CommitmentManifest</code>, ADR-0036). Its hash is the sealed hash (see Hashing)</td>
+<td>Hotkey (sr25519)</td>
+</tr>
+<tr>
+<td><code>hop-digest-batch</code></td>
+<td><code>HopDigestBatch</code>: <code>window</code>, <code>node</code>, <code>epoch</code> and the sorted 8-byte hop digests (16-character lowercase hex strings) of every packet the hop accepted for transit in that epoch (<code>receipts.md</code> §Hop digests, <code>hop_digest::HopDigestBatch</code>, ADR-0038)</td>
+<td>Node key of the hop (ed25519)</td>
+</tr>
+<tr>
+<td><code>sample-key-reveal</code></td>
+<td><code>SampleKeyReveal</code>: <code>window</code>, <code>epoch</code>, the epoch&#39;s 32-byte sampling <code>key</code> (64 lowercase hex) and the <code>ingress</code> that sampled with it. Epoch 0 is the window&#39;s key-chain anchor (<code>measurement.md</code> §Secure sampling, <code>hop_digest::SampleKeyReveal</code>, ADR-0038)</td>
+<td>Node key of the ingress (ed25519)</td>
+</tr>
+<tr>
+<td><code>outside-evidence</code></td>
+<td><code>OutsideEvidence</code>: one validator&#39;s snapshot of one outside source (<code>rpki</code>, <code>aspa</code>, <code>peering_db</code>, <code>ris</code>, <code>route_views</code> or <code>atlas</code>) for <code>window</code>, with <code>fetched_block</code> and records sorted and unique by canonical bytes. It is committed in the manifest slot <code>outside-evidence</code> and its hash is the plain hash (<code>measurement.md</code> §Outside evidence, <code>evidence::OutsideEvidence</code>, ADR-0039)</td>
+<td>Validator hotkey (sr25519)</td>
+</tr>
+<tr>
+<td><code>canary-plan</code></td>
+<td><code>CanaryReveal</code>: <code>v</code>, a validator&#39;s <code>plan</code> (<code>CanaryPlan</code>: <code>v</code>, <code>window</code>, the validator&#39;s SS58 <code>validator</code> and its sorted <code>entries</code> of <code>ingress</code>, <code>dst</code>, <code>start_ms</code>, <code>class</code> and <code>bytes</code>) and the 32-byte <code>secret</code> (64 lowercase hex) its timing and sizes were drawn from. Its plain hash is the plan&#39;s commitment, put in the manifest slot <code>canary-plan</code> at window open, and the object-store key it is revealed under after the window ends (<code>measurement.md</code> §Canary plans, <code>probe::CanaryReveal</code>, <code>probe::plan_commitment</code>, ADR-0051, Task 14)</td>
+<td>— (bound by the validator&#39;s hotkey-signed manifest)</td>
+</tr>
+<tr>
+<td><code>table-update</code></td>
+<td><code>TableUpdate</code>: an incremental update to the production table, with <code>window</code>, <code>block</code>, <code>seq</code>, <code>prev</code>, <code>changes</code>, <code>removed</code> (<code>routing.md</code> §Incremental updates, <code>table_update.rs</code>, Task 16b). A manifest slot may name it</td>
+<td>Incumbent solver hotkey (sr25519)</td>
+</tr>
+<tr>
+<td><code>table-update-attestation</code></td>
+<td>A validator&#39;s attestation of a <code>TableUpdate</code> <strong>with</strong> its <code>hotkey_sig</code> kept (<code>wire::sealed_bytes</code> framing, unlike <code>table-attestation</code>), so the next update&#39;s <code>prev</code> is fixed by what the quorum signed. Listed in <code>SEALED_HASH_DOMAINS</code> so its vector pins <code>sealed_hash</code></td>
+<td>Validator attestation key (ed25519)</td>
+</tr>
+<tr>
+<td><code>signed-table-update</code></td>
+<td>Publication domain: a whole <code>SignedTableUpdate</code>. &quot;Latest&quot; is the highest <code>(update.window, update.seq)</code></td>
+<td>— (carries attestations)</td>
+</tr>
+<tr>
+<td><code>route-table-bundle</code></td>
+<td><strong>Proposed (ADR-0059), not yet in code (PB-46).</strong> A solver&#39;s bundle of at most one route <code>Table</code> per shard, sorted by <code>shard</code>, committed and revealed whole. Used only under a shard plan with two or more shards; with one shard the commitment stays <code>route-table</code></td>
+<td>Solver hotkey</td>
+</tr>
+<tr>
+<td><code>shard-plan</code></td>
+<td><strong>Proposed (ADR-0059), not yet in code (PB-46).</strong> The committed <code>ShardPlan</code> (<code>routing.md</code> §Proposed (ADR-0059)), hashed into the tempo&#39;s committed inputs and published on ADR-0049&#39;s scheduled-change path</td>
+<td>— (hashed, not signed)</td>
+</tr>
+<tr>
+<td><code>shard-merge-record-attestation</code></td>
+<td><strong>Proposed (ADR-0059), not yet in code (PB-46).</strong> A validator&#39;s attestation of a <code>MergeRecord</code>: the window&#39;s plan hash, merged table hash and, per shard, the winner or reference, its table hash, weight and fallbacks</td>
+<td>Validator attestation key (ed25519)</td>
+</tr>
+<tr>
+<td><code>signed-shard-merge-record</code></td>
+<td><strong>Proposed (ADR-0059), not yet in code (PB-46).</strong> Publication domain: a whole attested <code>MergeRecord</code>. &quot;Latest&quot; is the highest <code>window</code></td>
+<td>— (carries attestations)</td>
+</tr>
+<tr>
+<td><code>shard-allocations</code></td>
+<td><strong>Proposed (ADR-0059), not yet in code (PB-46).</strong> A validator&#39;s attestation of the window&#39;s per-shard allocations (node, relay and link Mbps per shard), published before the commit deadline so solvers read their shard view</td>
+<td>Validator attestation key (ed25519)</td>
+</tr>
+</tbody></table></div>
+<p><code>wire::ALL_DOMAINS</code> lists exactly these domains, except rows marked &quot;not yet in code&quot;, which the named task adds; they MUST be unique.</p>
+<h3 id="receipt-shapes-adr-0037">Receipt shapes (ADR-0037)</h3>
+<p>The canonical encodings of the two receipts, keys sorted, signature fields shown (they&#39;re removed before signing). Field rules are in <code>receipts.md</code>; <code>canonical.json</code> pins one vector of each, and a second hop receipt with <code>block</code>.</p>
+<pre><code>hop-receipt:    {&quot;down&quot;:&quot;&lt;hex&gt;&quot;,&quot;seq&quot;:17,&quot;sig_down&quot;:&quot;&lt;hex&gt;&quot;,&quot;sig_up&quot;:&quot;&lt;hex&gt;&quot;,&quot;total&quot;:15,&quot;up&quot;:&quot;&lt;hex&gt;&quot;,&quot;v&quot;:0,&quot;window&quot;:1234}
+hop-receipt:    {&quot;block&quot;:1234567,&quot;down&quot;:&quot;&lt;hex&gt;&quot;,&quot;seq&quot;:18,&quot;sig_down&quot;:&quot;&lt;hex&gt;&quot;,&quot;sig_up&quot;:&quot;&lt;hex&gt;&quot;,&quot;total&quot;:15,&quot;up&quot;:&quot;&lt;hex&gt;&quot;,&quot;v&quot;:0,&quot;window&quot;:1234}
+client-receipt: {&quot;bytes&quot;:987654,&quot;class&quot;:&quot;realtime&quot;,&quot;client&quot;:&quot;&lt;hex&gt;&quot;,&quot;egress&quot;:&quot;&lt;hex&gt;&quot;,&quot;ingress&quot;:&quot;&lt;hex&gt;&quot;,&quot;sig&quot;:&quot;&lt;hex&gt;&quot;,&quot;v&quot;:0,&quot;window&quot;:1234}
+</code></pre>
+<ul>
+<li><code>hop-receipt</code> carries one unsplit <code>total</code> (u64) and no class. The v0 <code>bytes: {paid, free, canary}</code> object is gone, and a receipt in that shape fails canonical decoding.</li>
+<li><code>hop-receipt</code> <code>block</code> (u64, Task 12b) is optional and omitted when absent (rule 6), so a receipt without it encodes and signs as before; <code>canonical.json</code> pins one with it.</li>
+<li><code>client-receipt</code> <code>class</code> is omitted when empty (rule 6), so a receipt with no class encodes exactly as before ADR-0037 and keeps its signing bytes.</li>
+</ul>
+<h3 id="commitment-fields-and-the-inline-node-binding-adr-0058">Commitment fields and the inline node binding (ADR-0058)</h3>
+<p>Not JSON and not a signing domain. These are the raw bytes of a hotkey&#39;s Bittensor commitment fields, authenticated by the hotkey-signed extrinsic, so Invariant 7 has no Transit Fabric signature to frame (<code>identity.md</code> §Inline node binding).</p>
+<pre><code>field 0 : Sha256(commitment-manifest commitment_hash) | None
+payload : 0x00 || u32be(not_before) || u32be(not_after) || node_1 .. node_n     (n = 1..=7, keys strictly ascending)
+field 1 : Raw&lt;k&gt;(payload[0 .. min(len, 128)])
+field 2 : Raw&lt;len-128&gt;(payload[128 ..])                                          (only when len &gt; 128)
+</code></pre>
+<ul>
+<li>A registration is Transit Fabric&#39;s only as <code>[Sha256]</code> or <code>[Sha256 | None, Raw, Raw?]</code> with the canonical split.</li>
+<li>Decoding is exact: no trailing bytes, version <code>0</code>, valid non-weak Ed25519 keys and <code>not_before &lt;= not_after</code>.</li>
+<li>Vectors: <code>testdata/vectors/inline_binding.json</code>, with payloads and field splits for 1, 3, 4 and 7 nodes, the equivalent <code>node-binding</code> and its hash, layouts that are and aren&#39;t Transit Fabric&#39;s, and refused payloads with their error text. Both <code>bwos-core</code> and the link page are tested against it.</li>
+</ul>
+<h2 id="reserved-derivation-labels">Reserved derivation labels</h2>
+<p>These labels are used for raw (non-JSON) <code>BWOS-v0/&lt;label&gt;</code> hash and KDF inputs outside <code>signing_bytes</code>. They MUST NOT be used as signing domains; <code>wire::signing_bytes</code> and <code>wire::hash_hex</code> reject them (<code>wire::RESERVED_DERIVATION_LABELS</code>). Rows marked &quot;not yet in code&quot; are registered here first, and the named task adds them to that list.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>probe-seed</code></td>
+<td>Probe schedule seed (<code>measurement.md</code>, <code>probe.rs</code>)</td>
+</tr>
+<tr>
+<td><code>cap-test</code></td>
+<td>Capacity-test lottery (<code>probe.rs</code>)</td>
+</tr>
+<tr>
+<td><code>cap-test-stream</code></td>
+<td>Capacity-test random payload stream and delivery-proof hash (<code>measurement.md</code>, <code>probe.rs</code>, <code>[SCR-3]</code>)</td>
+</tr>
+<tr>
+<td><code>cap-cohort</code></td>
+<td>Cohort id of a simultaneous capacity test: <code>SHA-256(&quot;BWOS-v0/cap-cohort&quot; || 0x00 || u32be(n) || node_pubkey_1 .. node_pubkey_n)</code> over the sorted member keys (<code>measurement.md</code> §Cohort capacity tests, <code>probe::cap_cohort_id</code>, <code>[T28]</code>)</td>
+</tr>
+<tr>
+<td><code>cap-cohort-test</code></td>
+<td>Per-member <code>test_id</code> of a cohort test: <code>SHA-256(&quot;BWOS-v0/cap-cohort-test&quot; || 0x00 || cohort_id || nonce || node_pubkey)</code> (<code>probe::cap_cohort_test_id</code>, <code>[T28]</code>)</td>
+</tr>
+<tr>
+<td><code>cap-team</code></td>
+<td><strong>ADR-0039, in code (Task 4Dc): <code>probe::cap_team_seed</code>, <code>probe::draw_team</code>.</strong> Team draw seed for a team capacity test: <code>SHA-256(&quot;BWOS-v0/cap-team&quot; || 0x00 || block_hash(b-1) || subject)</code>, where the subject is the node key or <code>cohort_id</code>; draw <code>j</code> uses <code>SHA-256(seed || u32be(j))</code> (<code>measurement.md</code> §Team capacity tests)</td>
+</tr>
+<tr>
+<td><code>cap-slot</code></td>
+<td><strong>ADR-0039, in code (Task 4Dc): <code>probe::cap_slot_key</code>.</strong> Slot order of due tests within a tier: <code>SHA-256(&quot;BWOS-v0/cap-slot&quot; || 0x00 || block_hash(b-1) || subject)</code>, ascending, so no one can grind a key for slot order</td>
+</tr>
+<tr>
+<td><code>cap-team-test</code></td>
+<td><strong>ADR-0039, in code (Task 4Dc): <code>probe::cap_team_test_id</code>, <code>CapTeamTest::test_id</code>.</strong> A team member&#39;s <code>test_id</code>: <code>SHA-256(&quot;BWOS-v0/cap-team-test&quot; || 0x00 || node_pubkey || u64be(b) || nonce)</code></td>
+</tr>
+<tr>
+<td><code>cap-peer-call</code></td>
+<td><strong>ADR-0056 revision 1, specified, not in code (Phase 2).</strong> A peer-load call&#39;s secret block draw: called at <code>b</code> when <code>u64be(SHA-256(&quot;BWOS-v0/cap-peer-call&quot; || 0x00 || plan_secret || node_pubkey || u64be(b))[0:8]) mod CAP_CALL_PERIOD == 0</code>; retest blocks are drawn the same way with <code>u64be(b_call)</code> appended (<code>measurement.md</code> §Peer-load capacity tests)</td>
+</tr>
+<tr>
+<td><code>cap-peer-coord</code></td>
+<td><strong>ADR-0056 revision 1, specified, not in code (Phase 2).</strong> Seed of the stake draw of a node&#39;s coordinator for a window: <code>SHA-256(&quot;BWOS-v0/cap-peer-coord&quot; || 0x00 || window_seed || node_pubkey)</code></td>
+</tr>
+<tr>
+<td><code>cap-peer-hidden</code></td>
+<td><strong>ADR-0056 revision 1, specified, not in code (Phase 2).</strong> VRF input of a validator&#39;s hidden-slot self-selection: <code>&quot;BWOS-v0/cap-peer-hidden&quot; || call_id</code>, <code>call_id = SHA-256(plan_secret || node_pubkey || u64be(b))</code>; the validator holds a slot when the output is below <code>stake_v × m / Σ stake</code></td>
+</tr>
+<tr>
+<td><code>cap-peer-inner</code></td>
+<td><strong>ADR-0056 revision 1, specified, not in code (Phase 2, PB-43e).</strong> AEAD associated data of a slice packet&#39;s inner header sealed to its <code>R_out</code> (sink blinding): <code>ChaCha20-Poly1305</code> under the X25519 key the source agrees with <code>R_out</code> for the call</td>
+</tr>
+<tr>
+<td><code>cap-peer-slice</code></td>
+<td><strong>ADR-0056 revision 1, specified, not in code (Phase 2).</strong> Seed of a peer-load call&#39;s secret endpoint draw: <code>SHA-256(&quot;BWOS-v0/cap-peer-slice&quot; || 0x00 || plan_secret || node_pubkey || u64be(b))</code>, <code>plan_secret</code> committed by the coordinator before the window and revealed after it; draw <code>j</code> reads <code>u64be(SHA-256(seed || u32be(j))[0..8])</code>, first a UID uniformly, then a node in it</td>
+</tr>
+<tr>
+<td><code>claim-code</code></td>
+<td>Edge claim code (<code>provisioning.rs</code>)</td>
+</tr>
+<tr>
+<td><code>macsec-cak</code>, <code>macsec-ckn</code></td>
+<td>MACsec key derivation (<code>datapath.md</code>)</td>
+</tr>
+<tr>
+<td><code>ipsec-esp-gcm-a2b</code>, <code>ipsec-esp-gcm-b2a</code></td>
+<td>IPsec ESP key derivation (<code>datapath.md</code>)</td>
+</tr>
+<tr>
+<td><code>packet-class-mask</code></td>
+<td>Overlay header class-byte pad: <code>SHA-256(&quot;BWOS-v0/packet-class-mask&quot; || 0x00 || mask_key || src || dst || u64be(flow_id) || u32be(payload_len) || payload)[0] &amp; 0x03</code> (<code>datapath.md</code>, <code>dataplane::class_mask_pad</code>, ADR-0024)</td>
+</tr>
+<tr>
+<td><code>packet-class-tag</code></td>
+<td>Masked overlay class tag (MAC over the class): <code>SHA-256(&quot;BWOS-v0/packet-class-tag&quot; || 0x00 || mask_key || mask_digest || u8(class))[0] &amp; 0x3f</code>, where <code>mask_digest</code> is the full <code>packet-class-mask</code> digest (<code>datapath.md</code>, <code>dataplane::class_tag</code>, ADR-0026)</td>
+</tr>
+<tr>
+<td><code>node-asn</code></td>
+<td>Node ASN: <code>4_200_000_000 + (first 4 bytes BE of SHA-256(&quot;BWOS-v0/node-asn&quot; || 0x00 || node_pubkey)) % 94_967_295</code>, the RFC 6996 private 4-octet range (defined by <code>identity::node_asn_from_public</code>, which <code>bwos_net::asn::node_asn</code> delegates to; ADR-0033 item 4, the approved design). Kernel and no-root nodes peer with it (PB-04, <code>datapath.md</code>)</td>
+</tr>
+<tr>
+<td><code>asn-tie</code></td>
+<td>ASN collision tie-break: <code>SHA-256(&quot;BWOS-v0/asn-tie&quot; || 0x00 || block_hash_after || node_pubkey)</code>, lower wins, where <code>block_hash_after</code> is the 32-byte hash of the block after the one that included the node&#39;s binding commitment (<code>identity::asn_tie</code>; ADR-0033 item 4 amendment; <code>scoring.md</code> §Snapshot inputs). In the address vectors against <code>block_hash_after = SHA-256(&quot;pipe-test-block-after&quot;)</code></td>
+</tr>
+<tr>
+<td><code>node-link</code></td>
+<td>Link address: <code>0xfc || SHA-256(&quot;BWOS-v0/node-link&quot; || 0x00 || node_pubkey)[0..15]</code>, the address a node holds BGP sessions on and gives as next hop for its <code>/128</code> (<code>datapath.md</code>, <code>identity::link_address_from_public</code>). ADR-0033 item 2, accepted by controller ruling</td>
+</tr>
+<tr>
+<td><code>partner-exit-node</code></td>
+<td>Partner relay node identity: <code>SHA-256(&quot;BWOS-v0/partner-exit-node&quot; || 0x00 || provider || 0x00 || relay_id || 0x00 || wg_pubkey)</code> (<code>partner_exits::derive_partner_node_identity</code>, ADR-0028; not on the launch path)</td>
+</tr>
+<tr>
+<td><code>hop-digest</code></td>
+<td>Hop digest of a packet: <code>SHA-256(&quot;BWOS-v0/hop-digest&quot; || 0x00 || invariant_bytes)[0..8]</code>, where <code>invariant_bytes</code> is the IPv6 header with traffic class and hop limit zeroed and the first 32 payload bytes (<code>measurement.md</code> §Secure sampling, <code>hop_digest::hop_digest</code>, ADR-0038)</td>
+</tr>
+<tr>
+<td><code>packet-sample</code></td>
+<td>Sampling tag: <code>HMAC-SHA-256(K_e, &quot;BWOS-v0/packet-sample&quot; || 0x00 || hop_digest)</code>; sampled when <code>u32be(tag[0..4]) &lt; rate_ppm * 4294</code> (<code>hop_digest::digest_sampled</code>, ADR-0038)</td>
+</tr>
+<tr>
+<td><code>sample-key</code></td>
+<td>Last key of a window&#39;s sampling key chain: <code>K_N = SHA-256(&quot;BWOS-v0/sample-key&quot; || 0x00 || mask_key || u64be(window))</code>, <code>N = SAMPLE_EPOCHS_PER_WINDOW</code> (<code>hop_digest::sample_keys</code>, ADR-0038)</td>
+</tr>
+<tr>
+<td><code>sample-key-chain</code></td>
+<td>Sampling key chain step: <code>K_e = SHA-256(&quot;BWOS-v0/sample-key-chain&quot; || 0x00 || K_{e+1})</code> (<code>hop_digest::chain_step</code>, <code>check_reveal_chain</code>, ADR-0038)</td>
+</tr>
+<tr>
+<td><code>canary-alloc</code></td>
+<td>Canary allocation draw (Task 14): a node&#39;s ticket <code>SHA-256(&quot;BWOS-v0/canary-alloc&quot; || 0x00 || seed || snapshot_hash || u64be(window) || u32be(len(n)) || n)</code> and its draw <code>j</code>, the same with <code>|| u32be(j)</code> appended, read as <code>u128be</code> of the first 16 bytes (<code>measurement.md</code> §Canary plans, <code>probe::canary_allocation_deduped</code>)</td>
+</tr>
+<tr>
+<td><code>canary-draw</code></td>
+<td>A validator&#39;s secret plan draws: <code>SHA-256(&quot;BWOS-v0/canary-draw&quot; || 0x00 || secret || u64be(window) || u64be(i))[0..8]</code> as <code>u64be</code> (<code>probe::canary_plan</code>)</td>
+</tr>
+</tbody></table></div>
+<h2 id="decoding-depth-bounds">Decoding &amp; Depth Bounds</h2>
+<p><code>wire::from_canonical_bytes</code> and <code>wire::canonical</code> enforce:</p>
+<ul>
+<li>Maximum serialized payload size <code>MAX_WIRE_BYTES = 4_194_304</code> (<code>4 MiB</code>).</li>
+<li>Pre-parse structural depth bound <code>MAX_JSON_DEPTH = 16</code> (<code>depth &lt;= 16</code>, root object = depth 1) and ASCII validation before heap deserialization, with exact round-trip verification (<code>canonical(decoded) == raw_bytes</code>) so duplicate keys, unsorted keys, whitespace, <code>-0</code>, or floats are rejected.</li>
+<li><code>wire::signing_bytes</code> requires <code>domain</code> to be <code>1..=64</code> printable non-whitespace ASCII bytes (<code>0x21..=0x7e</code>) and not a reserved derivation label.</li>
+</ul>
+<h2 id="hashing">Hashing</h2>
+<p><code>hash(domain, obj) = SHA-256(signing_bytes(domain, obj))</code>, hex encoded. Commitments use this hash, except for the sealed domains below.</p>
+<pre><code>sealed_bytes(domain, obj) = &quot;BWOS-v0/&quot; || domain || 0x00 || canonical_json(obj)
+sealed_hash(domain, obj)  = SHA-256(sealed_bytes(domain, obj))
+</code></pre>
+<p><code>sealed_bytes</code> is the signing framing with the signature fields kept. For a domain in <code>wire::SEALED_HASH_DOMAINS</code> (<code>commitment-manifest</code>, <code>attestation-key</code> and <code>table-update-attestation</code>), the on-chain commitment and the object-store key (<code>/v0/objects/&lt;domain&gt;/&lt;sealed_hash&gt;</code>) are the sealed hash (<code>wire::object_hash_hex</code>), so one commitment names exactly one encoding. Without this, a copy with the same body and a different or invalid <code>hotkey_sig</code> would have the same hash and could take the store slot first (ADR-0036, ADR-0042). The signature is still made and checked over <code>signing_bytes</code>. The <code>commitment-manifest</code> and <code>attestation-key</code> vectors in <code>canonical.json</code> carry a <code>sealed_hash</code> field; no other vector does.</p>
+<p>The publication domains (<code>signed-snapshot</code>, <code>signed-table</code>, <code>signed-directory</code>, <code>signed-validator-set</code>, <code>signed-table-update</code>) hash with <code>hash(domain, obj)</code>. Their objects have no top-level signature field, so the hash covers the whole object, attestations included (ADR-0042).</p>
+
+</main>
+<footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
+<a href="https://github.com/transitfabric/releases/releases">Releases</a> ·
+<a href="https://github.com/transitfabric/releases/issues">Issues</a> ·
+<a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a></footer>
+</body></html>

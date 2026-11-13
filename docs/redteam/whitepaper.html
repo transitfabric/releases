@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whitepaper | Transit Fabric red-team pack</title><meta name="description" content="What Transit Fabric is and why it is built this way."><link rel="stylesheet" href="../style.css"></head><body>
+<header><a class="brand" href="../index.html">Transit Fabric releases</a>
+<nav><a href="../index.html">Home</a><a href="../quickstart.html">Quick start</a><a href="../known-limits.html">Known limits</a><a href="../bounty.html">Bounty</a><a href="../redteam/index.html">Red team</a><a href="../claim.html">Claim credit</a><a href="../leaderboard.html">Leaderboard</a></nav></header>
+<main>
+<p class="notice">Taken from the Transit Fabric source repository at commit <code>91be12e</code> (<code>91be12ef98b775c7f045124e6b8c686c15439650</code>, main), file <code>docs/whitepaper.md</code>. Links into the private source tree are shown as plain text. <a href="whitepaper.md">Raw Markdown</a> · <a href="index.html">Red-team pack</a></p>
+<h1 id="transit-fabric-bandwidthos-a-cryptographically-verifiable-fc008-ebgp-transit-fabric-and-multi-commodity-routing-market-on-bittensor">Transit Fabric (BandwidthOS): A Cryptographically Verifiable <code>fc00::/8</code> eBGP Transit Fabric and Multi-Commodity Routing Market on Bittensor</h1>
+<p><strong>Version:</strong> 1.1 (2026-11-07). Replaces 1.0.  </p>
+<h2 id="what-changed-in-version-11">What changed in version 1.1</h2>
+<p>These decisions were made on 2026-11-06 and are reflected in the sections below. Where a section still describes the older design, it says so.</p>
+<ol>
+<li><strong>Unearned weight goes to a disclosed first-party UID, not a burn or recycle UID</strong> (§4.2; <code>scoring.md</code> §Unearned weight and the first-party UID). Version 1.0 sent the reference solver&#39;s share to a burn UID. That was dropped: the usual way to burn on Bittensor is to weight the owner&#39;s own hotkey, which the chain penalises by cutting the subnet&#39;s TAO share.<ul>
+<li><strong>Routing (Mechanism 1):</strong> unearned weight goes to a public first-party UID on a separate coldkey, and the amount is reported every window. Unearned weight means the reference solver&#39;s share, or everything when no solver scores. It shrinks as outside solvers beat the reference solver by more than <code>EPSILON_ROUTE</code> (2%).</li>
+<li><strong>Transit (Mechanism 0):</strong> unearned weight goes to no one. If no node has proven capacity in a window, validators set no transit weights at all.</li>
+</ul>
+</li>
+<li><strong>Nodes are paid only in emissions, and customer traffic is checked, never credited</strong> (ADR-0053; §3.2, §4.1). Customers pay the company in USDC. The company converts it to TAO and buys alpha. Vouchers, payments and client receipts are commercial metering, never a scoring input, so faking or steering &quot;paid&quot; traffic earns nothing. Mishandling customer traffic can only lower a node&#39;s score.</li>
+<li><strong>An always-on canary stream plus random full-rate bursts proves transit</strong> (ADR-0051; §3.3). Validators keep a low-rate canary stream through every node, on routes they allocate, checked at each hop. Frequent random full-rate tests catch burst-rented capacity.</li>
+<li><strong>Buyback alpha never becomes validator power</strong> (ADR-0053, OQ-105). The company holds the alpha it buys on hotkeys that never set weights, and that stake counts for nothing in measurement.</li>
+<li><strong>Gateways</strong> (ADR-0052; §7). Registered datacenter operators can on-ramp customers over BGP, cross-connects or a proxy. They can off-ramp to a customer&#39;s own network, or to allowlisted public destinations, so the customer&#39;s far end needs no Transit Fabric software. Ordinary transit nodes still never egress.</li>
+<li><strong>One System One sidecar on every node, with a public skill library learned from the fleet</strong> (ADR-0047, ADR-0048, ADR-0050).</li>
+<li><strong>The operating company is BandwidthOS</strong> (Inc. or LLC, not yet decided).</li>
+</ol>
+<p><strong>Repository:</strong> <code>bandwidthOS</code> (<code>bwos-core</code>, <code>bwos-node</code>, <code>bwos-solver</code>, <code>bwos-validator</code>, <code>bwos-probe</code>, <code>bwos-client</code>, <code>bwos-sim</code>)</p>
+<hr>
+<h2 id="abstract">Abstract</h2>
+<p>The global internet backbone suffers from two structural inefficiencies: <strong>(1) stranded physical capacity</strong>, where datacenter and hosting operators purchase committed 95th-percentile transit and leave 30–60% of their committed headroom idle, and <strong>(2) performance-blind routing</strong>, where the Border Gateway Protocol (BGP) selects paths by Autonomous System (AS) hop count and bilateral billing policy rather than real-time latency, jitter, packet loss, or link saturation. Hyperscalers (Google B4, Meta Express Backbone, Cloudflare Argo) solved these problems internally using private Software-Defined Wide Area Networks (SD-WANs) and centralized Multi-Commodity Flow (MCF) traffic-engineering solvers, but those capabilities remain locked inside proprietary corporate backbones. Meanwhile, first-generation decentralized bandwidth and VPN networks failed to capture institutional datacenter supply due to exit-node abuse liability, trivial self-dealing (wash-trading) of byte counters, and userspace cryptographic bottlenecks.</p>
+<p>We present <strong>Transit Fabric (BandwidthOS)</strong>, a Bittensor subnet that turns committed datacenter and prosumer edge bandwidth into an open, cryptographically verifiable Layer-3/Layer-4 transit fabric. Every node and client in Transit Fabric derives a deterministic, unforgeable <code>/128</code> IPv6 Unique Local Address (<code>fc00::/8</code>) directly from its Ed25519 public key, forming a flat, zero-registry eBGP overlay (<code>ASN 4200000000+</code>) over kernel WireGuard, IPsec ESP (<code>RFC 4303</code>), and IEEE 802.1AE MACsec links. To align incentives without a central coordinator, Transit Fabric splits Bittensor emissions across two specialized mechanisms: <strong>Mechanism 0 (<code>mechid=0</code>)</strong> rewards transit operators for verified bottleneck capacity and conservation-of-flow traffic delivery, while <strong>Mechanism 1 (<code>mechid=1</code>)</strong> runs a continuous tournament among route solvers that compute capacity-aware, multi-class (<code>realtime</code>, <code>low_latency_hd</code>, <code>bulk</code>, <code>economy</code>, <code>resilient</code>) route tables. Transit nodes never egress to the public internet; only registered exit partners and registered gateways do (<code>ADR-0004</code>, <code>ADR-0052</code>). Nodes are paid only in emissions, from capacity proven by random full-rate tests and from carriage of a validator-allocated canary stream checked at every hop (<code>ADR-0051</code>). Customer traffic is checked, never credited (<code>ADR-0053</code>), so wash-trading earns nothing, while forwarding stays at kernel line rate. We validate the protocol through a 50-window adversarial game-theoretic simulator and live transatlantic multi-region deployments across North America and Europe.</p>
+<hr>
+<h2 id="1-introduction-motivation">1. Introduction &amp; Motivation</h2>
+<h3 id="11-the-stranded-datacenter-transit-opportunity">1.1 The Stranded Datacenter Transit Opportunity</h3>
+<p>Institutional datacenter operators, bare-metal cloud providers, and regional colocation facilities purchase upstream IP transit on fixed monthly commitments (typically billed at the 95th percentile of 5-minute traffic samples over 10 Gbps, 40 Gbps, or 100 Gbps ports). To survive diurnal traffic peaks and DDoS bursts without incurring punitive overage rates, operators provision substantial headroom that sits idle for the majority of the billing cycle. Because the commit is already sunk, the marginal cost to an operator of carrying additional overlay transit traffic below their 95th-percentile commit is near zero.</p>
+<h3 id="12-the-pathology-of-public-internet-bgp">1.2 The Pathology of Public Internet BGP</h3>
+<p>Even when physical fiber paths between two regions are uncongested, public internet BGP routinely selects suboptimal routes:</p>
+<ul>
+<li><strong>AS-Path Blindness:</strong> Standard BGP selects routes primarily by <code>LOCAL_PREF</code> and <code>AS_PATH</code> length. A 2-hop AS path with 4% packet loss and 45 ms of queuing jitter is preferred over a 4-hop AS path with 0% loss and 12 ms lower propagation delay.</li>
+<li><strong>Slow Convergence:</strong> Public BGP route convergence following a fiber cut or peering brownout can take tens of seconds to minutes, disrupting real-time voice, video, gaming, and distributed AI training workloads.</li>
+<li><strong>No Native Quality-of-Service (QoS) Differentiation:</strong> Public BGP cannot simultaneously route a latency-critical flow over a low-jitter path, a bulk dataset transfer over a widest-bandwidth path, and a high-availability flow over interior-node-disjoint primary and backup paths.</li>
+</ul>
+<p>Hyperscalers solved this by treating all of their datacenters as nodes in a single flat graph controlled by a traffic-engineering solver (such as Google&#39;s B4 and Cloudflare&#39;s Magic WAN). Transit Fabric brings this exact architecture to an open, permissionless market of independent operators.</p>
+<h3 id="13-why-first-generation-decentralized-bandwidth-networks-failed">1.3 Why First-Generation Decentralized Bandwidth Networks Failed</h3>
+<p>Prior attempts at tokenized bandwidth markets and decentralized VPNs (dVPNs) encountered three fatal failure modes:</p>
+<ol>
+<li><strong>The Exit Liability Trap:</strong> Legacy dVPNs required every bandwidth provider to act as a public internet exit node. When an anonymous user routed abusive traffic (DMCA violations, credential stuffing, or port scanning) through a node, the hosting operator received abuse complaints and risked immediate upstream BGP session termination. Consequently, institutional datacenter operators refused to participate, leaving legacy dVPNs with unreliable residential proxies.</li>
+<li><strong>The Wash-Trading Death Spiral:</strong> Protocols that rewarded miners proportional to &quot;bytes relayed&quot; without route-assignment enforcement or burn-backed demand verification were immediately gamed. Miners spun up two colluding nodes in the same datacenter rack and transmitted gigabits per second of synthetic loop traffic to capture 99% of token emissions.</li>
+<li><strong>Userspace Mixnet Bottlenecks:</strong> Privacy mixnets that wrap every packet in multi-layer userspace cryptography (e.g., Sphinx packet formats) incur severe CPU and serialization overhead, reducing throughput to a few megabits per second and adding hundreds of milliseconds of latency—rendering them unusable for institutional transit or daily desktop networking.</li>
+</ol>
+<p>Transit Fabric resolves all three failure modes at the protocol layer:</p>
+<ul>
+<li><strong>Strict Transit vs. Exit Separation (<code>ADR-0004</code>):</strong> Mechanism 0 transit nodes <strong>never</strong> egress packets to the public internet; they only forward encrypted <code>fc00::/8</code>-to-<code>fc00::/8</code> overlay traffic between bound peers. Public internet egress is performed only by registered <strong>Exit Partners</strong> (crypto-accepting VPN providers) and <strong>registered gateways</strong> (datacenter operators that meet published criteria, carrying paid, allowlisted traffic only, <code>ADR-0052</code>).</li>
+<li><strong>Solver-Assigned Routes + Conservation-of-Flow Receipts:</strong> Miners cannot choose their own traffic paths. Transit is only rewarded on paths assigned by the winning Mechanism 1 route table (or unannounced Validator Canary Probes), verified by adjacent co-signed <code>HopReceipts</code> and per-hop digests. Since version 1.1, nodes are paid only in emissions, and customer traffic is never credited (<code>ADR-0053</code>), so synthetic loop traffic earns nothing.</li>
+<li><strong>Cryptographic Control Plane, Kernel Data Plane:</strong> Cryptography is used to derive <code>/128</code> IPv6 identities, authenticate route tables, and co-sign periodic byte-counter receipts, while packet forwarding runs at line rate in the OS kernel (<code>WireGuard</code>, <code>IPsec ESP</code>, <code>MACsec</code>, and <code>FQ/BBR</code>).</li>
+</ul>
+<hr>
+<h2 id="2-system-architecture-cryptographic-identity">2. System Architecture &amp; Cryptographic Identity</h2>
+<pre><code class="language-mermaid">flowchart LR
+    subgraph Edge[&quot;Client &amp; Edge Layer&quot;]
+        C[&quot;bwos-client (macOS / Windows / OpenWrt)\nEd25519 Key -&gt; fc00::/8 (/128)&quot;]
+    end
+
+    subgraph Mech0[&quot;Mechanism 0: Bonded Transit Fabric (fc00::/8 eBGP)&quot;]
+        I[&quot;Ingress Gateway Node\n(WireGuard + HopReceipt)&quot;]
+        T1[&quot;Transit Node A\n(IPsec/MACsec + eBGP)&quot;]
+        T2[&quot;Transit Node B\n(IPsec/MACsec + eBGP)&quot;]
+    end
+
+    subgraph ExitLayer[&quot;Exit Partner Layer (ADR-0004)&quot;]
+        E[&quot;Registered VPN Exit Node\n(NAT64/Egress + Voucher Issuer)&quot;]
+        W[&quot;Public Internet\n(TLS 1.3 / TCP / UDP)&quot;]
+    end
+
+    subgraph Control[&quot;Validators &amp; Mechanism 1 Solvers&quot;]
+        S[&quot;Route Solvers (mechid=1)\nMulti-Class MCF Optimization&quot;]
+        V[&quot;Validators (bwos-validator + bwos-probe)\nCanary Probes + Receipt Audit + Subtensor Weights&quot;]
+    end
+
+    C -- &quot;1. Signed ClientReceipt +\nBandwidthVoucher (TLS/SOCKS5/WG)&quot; --&gt; I
+    I -- &quot;2. eBGP Assigned Path\n+ Co-Signed HopReceipt&quot; --&gt; T1
+    T1 -- &quot;3. eBGP Assigned Path\n+ Co-Signed HopReceipt&quot; --&gt; T2
+    T2 -- &quot;4. Co-Signed HopReceipt&quot; --&gt; E
+    E -- &quot;5. Public Egress (:443)&quot; --&gt; W
+    S -- &quot;Commit-Reveal RouteTable&quot; --&gt; V
+    V -- &quot;Winning RouteTable&quot; --&gt; Mech0
+    V -- &quot;Unannounced Canary Probes&quot; --&gt; Mech0
+</code></pre>
+<h3 id="21-separation-of-network-identity-and-economic-identity">2.1 Separation of Network Identity and Economic Identity</h3>
+<p>Transit Fabric enforces a strict cryptographic boundary between a machine&#39;s <strong>network identity</strong> and an operator&#39;s <strong>economic identity</strong> (<code>docs/specs/identity.md</code>):</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th align="left">Key Type</th>
+<th align="left">Algorithm</th>
+<th align="left">Storage Location</th>
+<th align="left">Protocol Role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Node Key</strong></td>
+<td align="left"><code>Ed25519</code> (RFC 8032)</td>
+<td align="left">Node / Appliance (<code>~/.bwos/node.key</code>, <code>0600</code>)</td>
+<td align="left">Network identity; derives <code>fc00::/8</code> IPv6 address; signs <code>HopReceipts</code> and <code>WgBindings</code></td>
+</tr>
+<tr>
+<td align="left"><strong>WireGuard Key</strong></td>
+<td align="left"><code>X25519</code> (RFC 7748)</td>
+<td align="left">Node / Client (<code>~/.bwos/wg.key</code>, <code>0600</code>)</td>
+<td align="left">Ephemeral/rotatable tunnel transport key bound via signed <code>WgBinding</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Operator Hotkey</strong></td>
+<td align="left"><code>sr25519</code> (Subtensor)</td>
+<td align="left">Off-box Operator Wallet</td>
+<td align="left">Economic identity (UID); signs <code>NodeBindings</code> and <code>CapacityDeclarations</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Client Key</strong></td>
+<td align="left"><code>Ed25519</code> (RFC 8032)</td>
+<td align="left">End-user device (<code>~/.bwos/client.key</code>, <code>0600</code>)</td>
+<td align="left">Derives client <code>fc00::/8</code> address; signs <code>ClientReceipts</code> and <code>FleetEnrollments</code></td>
+</tr>
+</tbody></table></div>
+<p>Appliances and transit servers <strong>never hold a Bittensor hotkey</strong>. An operator links a fleet of nodes to their Bittensor UID by publishing a hotkey-signed <code>NodeBinding</code> (domain <code>node-binding</code>), whose SHA-256 digest is committed on-chain and served via content-addressed HTTP (<code>/v0/objects/node-binding/&lt;sha256&gt;</code>, <code>ADR-0015</code>). If any node public key appears in two live <code>NodeBindings</code> from different hotkeys, validators deterministically exclude the conflicting node from both fleets.</p>
+<h3 id="22-zero-registry-cryptographic-ipv6-addressing-fc008">2.2 Zero-Registry Cryptographic IPv6 Addressing (<code>fc00::/8</code>)</h3>
+<p>On the public internet, participating in BGP requires acquiring an Autonomous System Number (ASN) and IP prefix from a Regional Internet Registry (ARIN, RIPE, APNIC) and maintaining RPKI Route Origin Authorizations (ROAs).</p>
+<p>In Transit Fabric, every node and client deterministically derives a unique <code>/128</code> IPv6 address inside the RFC 4193 Unique Local Address (<code>fc00::/8</code>) space directly from its 32-byte Ed25519 public key $\text{pk}$:</p>
+<p>$$\text{digest} = \text{SHA-512}!\left(\text{SHA-512}(\text{pk})\right)$$</p>
+<p>$$\text{addr}_{128} = \texttt{0xfc} ;|; \text{digest}[0..15]$$</p>
+<p>This construction provides three critical properties:</p>
+<ol>
+<li><strong>Zero Key Grinding:</strong> Unlike CJDNS (which requires brute-force CPU grinding until a double-SHA-512 hash begins with <code>0xfc</code>), Transit Fabric prepends the <code>0xfc</code> ULA prefix byte to the first 15 bytes (120 bits) of the double-SHA-512 digest. Key generation takes less than 50 microseconds on any CPU while providing $2^{120}$ collision resistance.</li>
+<li><strong>Impossible BGP Prefix Hijacking:</strong> Because the <code>/128</code> IPv6 address is a one-way cryptographic function of $\text{pk}$, no node on the overlay can originate or spoof a route for <code>fcxx:...</code> without possessing the corresponding Ed25519 private key.</li>
+<li><strong>Universal Peer Parity:</strong> Every participant—whether a 100 Gbps core router in Frankfurt, a cloud VM in Illinois, or a macOS laptop on Wi-Fi—speaks the exact same <code>fc00::/8</code> addressing scheme.</li>
+</ol>
+<h3 id="23-flattened-ebgp-control-plane-and-kernel-data-plane">2.3 Flattened eBGP Control Plane and Kernel Data Plane</h3>
+<p>Rather than inventing a custom userspace packet-routing daemon, Transit Fabric treats every node as a first-class datacenter router running standard <strong>FRRouting (<code>bgpd</code> + <code>bfdd</code>)</strong> over point-to-point encrypted links:</p>
+<ul>
+<li><strong>Deterministic 4-Byte Private ASN Derivation:</strong> Each node derives an RFC 6996 4-byte private ASN from its public key (<code>OVERLAY_BASE_ASN = 4,200,000,000</code> + deterministic node offset), originating its <code>/128</code> <code>fc00::/8</code> loopbacks into eBGP.</li>
+<li><strong>Sub-Second BFD Failover:</strong> Bidirectional Forwarding Detection (<code>bfdd</code> on kernel nodes, <code>bwos_net::bfd</code> on no-root nodes, <code>3 × 200 ms</code> intervals, so 600 ms detection) monitors every adjacent peer link. If a primary link drops, the BGP session ends and traffic moves to the solver-precomputed <code>backup_path</code>: measured at 544-716 ms in namespaces and an outage of 520-680 ms over the internet (<code>docs/results/phase-a-spikes.md</code>), without waiting for global control-plane reconvergence.</li>
+<li><strong>Transport Encryption &amp; Host Kernel Tuning:</strong><ul>
+<li><strong>Edge &amp; VMs:</strong> Kernel WireGuard (<code>ChaCha20-Poly1305</code>) with key-rotated <code>WgBindings</code>.</li>
+<li><strong>Datacenter Backbone:</strong> Point-to-point <strong>IPsec ESP (<code>RFC 4303</code>, AES-256-GCM)</strong> or Layer-2 <strong>IEEE 802.1AE MACsec (<code>GCM-AES-128/256</code>)</strong> with deterministic pairwise key derivation (<code>ipsec-ike-psk</code>, <code>ipsec-esp-key</code>, <code>macsec-cak</code>, <code>macsec-ckn</code>) for hardware NIC crypto offload (<code>mlx5</code> / Intel QAT).</li>
+<li><strong>Host TCP/UDP Offload Profile (<code>bwos-node tune-host</code>):</strong> Configures Linux <code>fq</code> pacing + <code>BBR</code> congestion control, 64 MB socket buffers (<code>net.core.rmem_max = 67108864</code>), and <code>ethtool</code> UDP GRO forwarding (<code>rx-udp-gro-forwarding on</code>).</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="3-cryptographic-accounting-conservation-of-flow">3. Cryptographic Accounting &amp; Conservation of Flow</h2>
+<p>A decentralized transit market is only as strong as its resistance to fabricated traffic. Transit Fabric enforces <strong>conservation of flow</strong> across every multi-hop path using four cryptographic primitives serialized in strict canonical JSON (<code>docs/specs/encoding.md</code>: lexicographically sorted UTF-8 keys, no whitespace, integer-only numbers, and domain-separated signatures over <code>&quot;BWOS-v0/&quot; || domain || &quot;\0&quot; || canonical_bytes</code>).</p>
+<h3 id="31-adjacent-co-signed-hopreceipts">3.1 Adjacent Co-Signed <code>HopReceipts</code></h3>
+<p>Every <code>RECEIPT_INTERVAL</code> (<code>30 s</code>), each pair of adjacent nodes $(u, d)$ on an active path exchanges and co-signs cumulative byte counters for the current window $w$ across three accounting classes (<code>paid</code>, <code>free</code>, <code>canary</code>):</p>
+<pre><code class="language-json">{
+  &quot;v&quot;: 0,
+  &quot;window&quot;: 1234,
+  &quot;seq&quot;: 17,
+  &quot;up&quot;: &quot;&lt;upstream_node_pubkey_hex&gt;&quot;,
+  &quot;down&quot;: &quot;&lt;downstream_node_pubkey_hex&gt;&quot;,
+  &quot;bytes&quot;: { &quot;paid&quot;: 123456789, &quot;free&quot;: 0, &quot;canary&quot;: 4567890 },
+  &quot;sig_up&quot;: &quot;&lt;ed25519_hex&gt;&quot;,
+  &quot;sig_down&quot;: &quot;&lt;ed25519_hex&gt;&quot;
+}
+</code></pre>
+<ol>
+<li><strong>Monotonicity:</strong> Within a window $w$, byte counters for each class MUST be monotonically non-decreasing with sequence number <code>seq</code>.</li>
+<li><strong>Bilateral Tolerance Gate:</strong> Upstream node $u$ proposes its cumulative transmitted bytes and signs <code>sig_up</code> (domain <code>hop-receipt</code>). Downstream node $d$ compares $u$&#39;s proposed counts against its own received byte counters. If the discrepancy is within <code>RECEIPT_TOLERANCE_PPM</code> ($5{,}000\text{ ppm} = 0.5%$), $d$ appends <code>sig_down</code>. Otherwise, $d$ counter-proposes its own lower counts. Unilateral (single-signed) receipts earn zero credit.</li>
+<li><strong>Multi-Hop Chain Conservation Check:</strong> Given an assigned route $n_0 \to n_1 \to n_2 \to \dots \to n_k$, validators verify the chain of highest-<code>seq</code> co-signed receipts $(n_0, n_1), (n_1, n_2), \dots, (n_{k-1}, n_k)$:<ul>
+<li>If any interior hop $n_i$&#39;s reported bytes exceed both its upstream receipt $(n_{i-1}, n_i)$ and downstream receipt $(n_i, n_{i+1})$ by more than <code>RECEIPT_TOLERANCE_PPM</code>, hop $n_i$ is flagged for inflation and its credit on that path is <strong>zeroed</strong>.</li>
+<li>If any interior receipt $(n_{i-1}, n_i)$ is missing, the entire multi-hop chain is <strong>zeroed</strong> for that window segment.</li>
+<li>Across diamond or DAG topologies where multiple routes traverse a shared bottleneck link $(n_a, n_b)$, validators aggregate flow conservation across the union of assigned routes so legitimate shared hops are never falsely penalized (<code>crates/bwos-core/src/validator.rs</code>).</li>
+</ul>
+</li>
+</ol>
+<h3 id="32-boundary-attestation-clientreceipts-and-bandwidthvouchers">3.2 Boundary Attestation: <code>ClientReceipts</code> and <code>BandwidthVouchers</code></h3>
+<blockquote>
+<p><strong>Superseded for scoring by ADR-0053 (version 1.1).</strong> Client receipts and vouchers remain commercial metering: quota, billing, and destination allowlists for gateways. They are never a scoring input. A colluding path gains nothing by co-signing fake <code>paid</code> bytes, because paid bytes earn no emissions. The 1.0 text below describes the retired design and is kept for reference. Its code paths are removed in roadmap PB-40.</p>
+</blockquote>
+<p>While <code>HopReceipts</code> prevent interior nodes from inflating counters relative to their neighbors, what stops an entire colluding path $n_0 \to n_1 \to n_2$ from co-signing fake <code>paid</code> bytes?</p>
+<p>Transit Fabric closes this boundary loop with two end-to-end mechanisms (<code>ADR-0016</code>, <code>ADR-0019</code>):</p>
+<ol>
+<li><strong>Client Receipts (<code>client-receipt</code>):</strong> The end-user client (<code>bwos-client</code>) signs cumulative delivery receipts binding <code>(window, client, ingress, egress, bytes)</code>. Validators verify that <code>paid</code> bytes claimed at the ingress hop $(n_0, n_1)$ are covered by valid <code>ClientReceipts</code> within <code>RECEIPT_TOLERANCE_PPM</code>. Any uncovered <code>paid</code> bytes are automatically downgraded to <code>free</code> (<code>W_FREE = 250,000</code> ppm vs. <code>W_PAID = 1,000,000</code> ppm).</li>
+<li><strong>Burn-Backed Bandwidth Vouchers (<code>bandwidth-voucher</code>):</strong> To qualify as <code>paid</code> traffic (<code>W_PAID</code>), a session must be authorized by a <code>BandwidthVoucher</code> signed by a registered Exit Partner or Fleet Aggregator:<ul>
+<li>Issuing a <code>BandwidthVoucher</code> requires a mandatory minimum protocol burn/fee of <code>PROTOCOL_VOUCHER_BURN_PPM</code> ($50{,}000\text{ ppm} = 5%$, with $10%$ default in simulation).</li>
+<li>Because any miner attempting to mint vouchers to wash-trade their own transit nodes forfeits the protocol burn upfront and must share Mechanism 0 emissions with all honest capacity and usage on the subnet, self-dealing is strictly negative-EV.</li>
+</ul>
+</li>
+</ol>
+<h3 id="33-unannounced-canary-probes-random-saturation-capacity-tests">3.3 Unannounced Canary Probes &amp; Random Saturation Capacity Tests</h3>
+<blockquote>
+<p><strong>Updated in version 1.1 (ADR-0051, ADR-0053):</strong></p>
+<ul>
+<li><strong>An always-on canary stream.</strong> Validators keep a low-rate canary stream through every node, on node pairs they allocate by a verifiable draw. The production table supplies only the hops.</li>
+<li><strong>Secret schedules.</strong> Each validator&#39;s schedule is secret until the window ends: it is committed before the window and revealed after.</li>
+<li><strong>Checked at every hop.</strong> Only bytes that reach the validator&#39;s sink and pass per-hop digests count.</li>
+<li><strong>Shaped like real traffic.</strong> Canaries follow global traffic statistics and include full-rate flows, so throttling shows up as well as dropping.</li>
+<li><strong>Frequent random full-rate tests.</strong> About 20 a day per node on testnet (<code>CAP_TEST_PERIOD</code> 360 blocks, Task 15b), so capacity rented only for test bursts shows up on the renter&#39;s bill.</li>
+<li><strong>Team tests.</strong> The full-rate tests run 60 s and are pushed by a team of validators (ADR-0039).</li>
+</ul>
+<p>Specified in Task 14 and PB-38. The 1.0 text below describes the earlier shared, computable schedule.</p>
+</blockquote>
+<p>Validators run <code>bwos-probe</code> daemons from distributed vantage points using a shared, deterministic probe schedule seeded by the Subtensor block hash (<code>docs/specs/measurement.md</code>):</p>
+<ul>
+<li><strong>Indistinguishable Canary Flows:</strong> Validator canary probes are padded and encapsulated to look identical to <code>paid</code> customer traffic on the wire. Transit nodes cannot selectively prioritize probes over customer traffic.</li>
+<li><strong>Random Saturation Capacity Tests:</strong> Every <code>CAP_TEST_PERIOD</code> (<code>900 blocks</code>), validators select nodes pseudorandomly for a <code>CAP_TEST_SECONDS</code> (<code>10 s</code>) saturation burst to measure actual deliverable throughput $B_{\text{meas}}(n)$ against declared capacity $B_{\text{decl}}(n)$:<ul>
+<li>If $B_{\text{meas}}(n) \ge B_{\text{decl}}(n) \cdot (1 - \text{CAP_TOLERANCE_PPM}/10^6)$ (within 10% tolerance), the node receives full credit for its declared capacity: $B_{\text{ver}}(n) = B_{\text{decl}}(n)$.</li>
+<li>If a node over-claims its physical capacity ($B_{\text{meas}}(n) &lt; 0.90 \cdot B_{\text{decl}}(n)$), it suffers an immediate <code>OVERCLAIM_PENALTY_PPM</code> ($200{,}000\text{ ppm} = 20%$) haircut below its measured throughput:
+$$B_{\text{ver}}(n) = B_{\text{meas}}(n) \cdot \frac{10^6 - \text{OVERCLAIM_PENALTY_PPM}}{10^6}$$
+This penalty persists for <code>CAP_PENALTY_WINDOWS</code> (<code>24 windows</code>), and capacity declarations are subject to a <code>CAP_CHANGE_WINDOWS</code> (<code>24 windows</code>) cooldown.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="4-dual-mechanism-incentive-design">4. Dual-Mechanism Incentive Design</h2>
+<p>All scoring in Transit Fabric (<code>crates/bwos-core/src/scoring/mod.rs</code>) is implemented in <strong>100% deterministic integer fixed-point arithmetic</strong> (<code>u128</code>/<code>i128</code> parts-per-million, $10^6\text{ ppm} = 1.0$, with floor division and deterministic <code>BTreeMap</code> UID ordering). Given identical committed inputs, every honest validator on any CPU architecture computes <strong>byte-identical Subtensor weight vectors</strong>.</p>
+<h3 id="41-mechanism-0-mechid0-physical-transit-capacity-verified-usage">4.1 Mechanism 0 (<code>mechid=0</code>): Physical Transit Capacity &amp; Verified Usage</h3>
+<p>For each transit operator UID $u$ in window $w$:</p>
+<ol>
+<li><p><strong>Verified Fleet Capacity ($K_u$) and Uptime-Weighted Capacity ($\text{cap}_u$):</strong>
+$$K_u = \sum_{n \in \text{Fleet}(u)} B_{\text{ver}}(n), \qquad \text{cap}_u = \left\lfloor \frac{K_u \cdot A_u^k}{(10^6)^k} \right\rfloor$$
+where $A_u \in [0, 10^6]$ is the operator&#39;s probe availability (uptime in ppm) and $k = \text{UPTIME_EXP} = 2$. Squaring uptime strongly penalizes flaky nodes ($50%$ uptime yields $25%$ capacity credit).</p>
+</li>
+<li><p><strong>Node Delivery Quality ($Q_n$):</strong>
+$$\text{lat_ppm}_n = \min!\left(10^6,; \left\lfloor \frac{\text{predicted_us}_n \cdot 10^6}{\text{measured_us}_n} \right\rfloor\right)$$
+$$\text{loss_ppm}_n = 10^6 - \min!\left(10^6,; \text{loss_measured_ppm}_n \cdot \text{LOSS_MULT}\right)$$
+$$Q_n = \left\lfloor \frac{\text{lat_ppm}_n \cdot \text{loss_ppm}_n}{10^6} \right\rfloor$$
+Crucially, $\text{predicted_us}_n$ is computed deterministically by validators from the window&#39;s topology snapshot link latencies (<code>routing::route_predicted_us</code>), never trusted from an unverified solver estimate. With $\text{LOSS_MULT} = 10$, a node with $\ge 10%$ packet loss receives $Q_n = 0$.</p>
+</li>
+</ol>
+<blockquote>
+<p><strong>Updated in version 1.1 (ADR-0053):</strong> the usage term $\text{use}_u$ becomes <strong>verified canary carriage only</strong>: validator-allocated, delivered, digest-passing bytes. Paid and free customer bytes never enter it. Until PB-38 lands, Mechanism 0 pays on capacity alone ($W = 10^6$), and the paid-traffic trigger described in 1.0 is retired (PB-40). Steps 3 and 5 below describe the 1.0 design.</p>
+</blockquote>
+<ol start="3">
+<li><p><strong>Quality-Adjusted Verified Usage ($\text{use}_u$):</strong>
+$$\text{use}<em>u = \sum</em>{n \in \text{Fleet}(u)} \sum_{c \in {\text{paid}, \text{free}, \text{canary}}} \left\lfloor \frac{\text{bytes}<em>{\text{ver}}(n, c) \cdot W_c \cdot Q_n \cdot C_n}{10^{18}} \right\rfloor$$
+where class weights are $W</em>{\text{paid}} = 1{,}000{,}000\text{ ppm}$, $W_{\text{free}} = 250{,}000\text{ ppm}$, and $W_{\text{canary}} = 100{,}000\text{ ppm}$, and $C_n \in [10^6, C_{\max}]$ is the geographic/ASN diversity multiplier.</p>
+</li>
+<li><p><strong>Usage Concentration Cap (<code>USAGE_SHARE_CAP</code>):</strong>
+To prevent a single large operator from monopolizing usage emissions, no UID&#39;s usage share $\text{use}_u / \sum \text{use}$ may exceed <code>USAGE_SHARE_CAP</code> ($250{,}000\text{ ppm} = 25%$) whenever at least $\lceil 10^6 / \text{USAGE_SHARE_CAP} \rceil = 4$ UIDs have positive usage. Excess share is iteratively clipped and redistributed pro rata across uncapped UIDs.</p>
+</li>
+<li><p><strong>Blended Mechanism 0 Share ($\text{share}_u$):</strong>
+$$\text{share}_u = \left\lfloor \frac{\text{ALPHA} \cdot \text{cap}_u}{\sum_j \text{cap}_j} \right\rfloor + \left\lfloor \frac{(10^6 - \text{ALPHA}) \cdot \widehat{\text{use}}_u}{\sum_j \widehat{\text{use}}_j} \right\rfloor$$
+At network bootstrap, $\text{ALPHA} = 700{,}000\text{ ppm}$ ($70%$ bonded capacity, $30%$ verified traffic usage) to guarantee reliable baseline capacity for launch partners, stepping down via governance as paid traffic volume scales.</p>
+</li>
+</ol>
+<hr>
+<h3 id="42-mechanism-1-mechid1-competitive-multi-commodity-route-solving">4.2 Mechanism 1 (<code>mechid=1</code>): Competitive Multi-Commodity Route Solving</h3>
+<p>In Mechanism 1, route solvers compete every window via commit-reveal (<code>hash(&quot;route-table&quot;, table)</code>) to optimize the global route table across five distinct QoS traffic classes (<code>ADR-0017</code>, <code>ADR-0018</code>):</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th align="left">Traffic Class</th>
+<th align="left">Target Use Case</th>
+<th align="left">Composite Objective Weights</th>
+<th align="left">Hard SLA Gate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>realtime</code></strong></td>
+<td align="left">VoIP, trading, gaming, interactive SSH</td>
+<td align="left">$70%\ G_{\text{lat}} + 30%\ G_{\text{jit}}$</td>
+<td align="left">$\text{RTT} \le \text{direct}$, $\text{jitter} \le 5\text{ ms}$, $\text{loss} \le 0.5%$</td>
+</tr>
+<tr>
+<td align="left"><strong><code>low_latency_hd</code></strong></td>
+<td align="left">4K video conferencing, cloud desktop</td>
+<td align="left">$50%\ G_{\text{lat}} + 50%\ G_{\text{bw}}$</td>
+<td align="left">$\text{RTT} \le \text{direct}$, $\text{loss} \le 5.0%$</td>
+</tr>
+<tr>
+<td align="left"><strong><code>bulk</code></strong></td>
+<td align="left">AI checkpoint sync, dataset replication</td>
+<td align="left">$80%\ G_{\text{bw}} + 20%\ G_{\text{lat}}$</td>
+<td align="left">$\text{RTT} \le 1.50 \times \text{direct}$, $\text{loss} \le 5.0%$</td>
+</tr>
+<tr>
+<td align="left"><strong><code>economy</code></strong></td>
+<td align="left">Background backups, low-cost transit</td>
+<td align="left">$70%\ G_{\text{cost}} + 30%\ G_{\text{lat}}$</td>
+<td align="left">$\text{RTT} \le 1.50 \times \text{direct}$, $\text{loss} \le 5.0%$</td>
+</tr>
+<tr>
+<td align="left"><strong><code>resilient</code></strong></td>
+<td align="left">Mission-critical dual-path HA links</td>
+<td align="left">$60%\ G_{\text{lat}} + 40%\ (\mu_{\text{disj}} \cdot G_{\text{backup}})$</td>
+<td align="left">Valid disjoint <code>backup_path</code>, $\text{loss} \le 5.0%$</td>
+</tr>
+</tbody></table></div>
+<p>For each sampled demand pair $p = (\text{src}, \text{dst}, \text{class})$, validators evaluate the normalized improvement components clamped to $[-10^6, +10^6]\text{ ppm}$ relative to the measured direct internet baseline:</p>
+<ul>
+<li><p><strong>Latency Gain ($G_{\text{lat}}$):</strong> $(\text{direct_us} - \text{measured_us}) \cdot 10^6 / \text{direct_us}$</p>
+</li>
+<li><p><strong>Jitter Gain ($G_{\text{jit}}$):</strong> $(\text{direct_jitter_us} - \text{measured_jitter_us}) \cdot 10^6 / \text{direct_jitter_us}$</p>
+</li>
+<li><p><strong>Loss-Adjusted Bottleneck Bandwidth Gain ($G_{\text{bw}}$):</strong> $(\text{eff_bottleneck_mbps} - \text{direct_mbps}) \cdot 10^6 / \text{direct_mbps}$</p>
+</li>
+<li><p><strong>Congestion-Adjusted Cost Gain ($G_{\text{cost}}$):</strong> Each link $e$ with utilization $u_e \in [0, 10^6]\text{ ppm}$ incurs a quadratic congestion surcharge:
+$$\text{eff_cost_ppm}(e) = \text{cost_ppm}(e) \cdot \left(10^6 + \left\lfloor \frac{\text{CONGESTION_SURCHARGE_PPM} \cdot u_e^2}{10^{12}} \right\rfloor\right) \Big/ 10^6$$
+encouraging solvers to spill traffic smoothly across parallel paths before any single bottleneck saturates.</p>
+</li>
+<li><p><strong>Disjoint Backup Multiplier ($\mu_{\text{disj}}$):</strong> For <code>resilient</code> routes, $\mu_{\text{disj}} = 1{,}000{,}000\text{ ppm}$ ($1.0\times$) if <code>backup_path</code> shares <strong>neither</strong> interior nodes nor directed links with <code>path</code>, and $500{,}000\text{ ppm}$ ($0.5\times$) if it is link-disjoint but shares an interior node.</p>
+</li>
+</ul>
+<h4 id="solver-score-anti-copycat-tournament-selection">Solver Score &amp; Anti-Copycat Tournament Selection</h4>
+<p>A solver $s$&#39;s overall window score is computed using the <strong>lower median</strong> of pairwise gains minus feasibility and route-flapping penalties:</p>
+<p>$$\text{score}<em>s = \text{lower_median}</em>{p}!\left(\text{gain}_p(s)\right) - \text{FEASIBILITY_PENALTY} \cdot \text{overloaded_nodes}(s) - \left\lfloor \frac{\text{CHURN_PENALTY} \cdot \text{churn_ppm}(s)}{10^6} \right\rfloor$$</p>
+<ul>
+<li><strong>Copycat Exclusion (updated in 1.1):</strong> only solvers that beat the reference solver by more than <code>EPSILON_ROUTE</code> earn a rung, and everything at or below the reference is unearned. A copy of last window&#39;s production table scores 0. In the 1.0 rule, any non-reference solver whose score is within <code>EPSILON_ROUTE</code> ($20{,}000\text{ ppm} = 2%$) of the open-source reference solver (<code>bwos-solver</code>), or whose pairwise gain vector duplicates the reference solver or an earlier-committed solver, is eliminated.</li>
+<li><strong>Winner &amp; Unearned Allocation:</strong> The highest-scoring solver replaces the incumbent only if $\text{score}<em>{\text{candidate}} \ge \text{score}</em>{\text{incumbent}} + \text{EPSILON_ROUTE}$. Every table is graded against the next window&#39;s snapshot, and solvers are paid on a graded ladder: the top <code>LADDER_N</code> (8) positive scores take rungs whose weights halve (<code>LADDER_DECAY_PPM</code> $= 500{,}000$), and a table within <code>CLONE_DISTANCE_PPM</code> (2%) of one committed in the same block or earlier scores 0 (<code>scoring.md</code> §Mechanism 1, ADR-0035). Any share won by the reference solver is unearned weight: it goes to the owner&#39;s disclosed <strong>first-party UID</strong> under a separate coldkey, never to an owner-coldkey hotkey or a burn UID, and is reported publicly (<code>scoring.md</code> §Unearned weight and the first-party UID). Unearned <strong>transit</strong> weight (Mechanism 0) goes to no one: with no proven capacity in a window, validators set no Mechanism 0 weights.</li>
+</ul>
+<hr>
+<h2 id="5-prosumer-edge-fleet-aggregation-the-mine-to-surf-loop-adr-0019">5. Prosumer Edge Fleet Aggregation &amp; The &quot;Mine-to-Surf&quot; Loop (<code>ADR-0019</code>)</h2>
+<blockquote>
+<p><strong>Version 1.1 note:</strong> this is a later consumer feature (VPN exits, Stage 5). The vouchers it describes are commercial only and never earn emissions (ADR-0053).</p>
+</blockquote>
+<p>Because Bittensor subnets have a fixed number of registered UID slots (e.g., 256 UIDs), individual desktop and home-lab power users cannot each register an on-chain UID. Transit Fabric solves this by introducing <strong>Fleet Aggregators</strong> and the <strong>Mine-to-Surf Circular Economy</strong>:</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Mac as Prosumer Edge Client (bwos-client)
+    participant Agg as Fleet Aggregator / Exit Operator (UID u)
+    participant Val as Transit Fabric Validators
+
+    Mac-&gt;&gt;Agg: 1. Sign FleetEnrollment (domain: &quot;fleet-enrollment&quot;, commission &lt;= 20%)
+    Mac-&gt;&gt;Agg: 2. Relay assigned edge transit &amp; co-sign HopReceipts
+    Agg-&gt;&gt;Val: 3. Submit aggregated ReceiptBatch for UID u
+    Val-&gt;&gt;Agg: 4. Score Mechanism 0 &amp; emit Alpha (α) to UID u
+    Agg-&gt;&gt;Mac: 5. Credit sub-node α share &amp; sign BandwidthVoucher (burn &gt;= 5%)
+    Mac-&gt;&gt;Agg: 6. Route multi-region VPN / SDN traffic using α BandwidthVoucher
+</code></pre>
+<ol>
+<li><strong>Permissionless Sub-Node Enrollment (<code>FleetEnrollment</code>):</strong> Any macOS, Windows, Linux, or OpenWrt device running <code>bwos-client</code> or <code>bwos-node</code> can enroll in a Fleet Aggregator UID by signing a <code>FleetEnrollment</code> object with its Ed25519 key (specifying <code>commission_ppm &lt;= MAX_AGGREGATOR_COMMISSION_PPM = 200,000</code> ppm).</li>
+<li><strong>Proportional $\alpha$ Accounting:</strong> Validators score the aggregator&#39;s total verified bytes across all enrolled sub-nodes. The aggregator deducts its capped commission ($\le 20%$) and allocates the remaining $\alpha$ pool deterministically in proportion to each sub-node&#39;s co-signed <code>HopReceipt</code> byte contribution.</li>
+<li><strong>Mine-to-Surf Voucher Minting:</strong> Instead of requiring credit cards or KYC, an edge user converts their earned $\alpha$ balance directly into a cryptographically signed <code>BandwidthVoucher</code> (<code>domain: &quot;bandwidth-voucher&quot;</code>) that authorizes high-priority <code>paid</code> VPN exit and SDN transit across the global Transit Fabric mesh.</li>
+</ol>
+<hr>
+<h2 id="6-tokenomics-alpha-buyback-flywheel-3-year-financial-projections">6. Tokenomics, Alpha Buyback Flywheel &amp; 3-Year Financial Projections</h2>
+<h3 id="61-the-dynamic-tao-alpha-buyback-flywheel">6.1 The Dynamic TAO ($\alpha$) Buyback Flywheel</h3>
+<blockquote>
+<p><strong>Version 1.1 note:</strong> the company converts customer USDC to TAO and buys alpha on the Transit Fabric subnet. It holds that alpha on hotkeys that never set weights, and that stake counts for nothing in measurement (ADR-0053, OQ-105). The voucher burn in the diagram below is retired: vouchers are commercial only.
+Under Bittensor&#39;s Dynamic TAO (dTAO) emission model, each subnet&#39;s share of daily network emissions (<code>3,600 TAO/day</code>, or <code>~$366.6M/year</code> at <code>$279/TAO</code>) is determined by the Exponential Moving Average (EMA) price of its subnet token ($\alpha$). Within the subnet, emissions are distributed <strong><code>41%</code> to Miners</strong> (Mechanism 0 transit operators and Mechanism 1 route solvers), <strong><code>41%</code> to Validators</strong>, and <strong><code>18%</code> to the Subnet Owner</strong>.</p>
+</blockquote>
+<p>Rather than relying on speculative token demand alone, Transit Fabric couples commercial transit revenue directly to the $\alpha$ token via a programmatic buyback flywheel (<code>docs/economics/PIPE_subnet_economic_model.xlsx</code>):</p>
+<pre><code class="language-mermaid">flowchart LR
+    Rev[&quot;Commercial Customer Revenue\n(VPN Backbones, Enterprise SDN,\nExit Credits, Telemetry)&quot;]
+    Buy[&quot;80% Programmatic Alpha (α) Buyback\n+ Voucher Burn (&gt;=5%)&quot;]
+    Fee[&quot;20% Protocol Fee\n(Operating Company Revenue)&quot;]
+    EMA[&quot;Higher EMA α Price\n-&gt; Larger Subnet Share of 3,600 TAO/day&quot;]
+    Cap[&quot;Larger Miner Incentive Pool (41%)\n-&gt; Lower Transit Cost &amp; More Bonded 10G/100G Nodes&quot;]
+
+    Rev --&gt; Buy
+    Rev --&gt; Fee
+    Buy --&gt; EMA
+    EMA --&gt; Cap
+    Cap --&gt; Rev
+</code></pre>
+<ol>
+<li><strong>80% Programmatic $\alpha$ Buyback / 20% Protocol Fee:</strong> Customers (VPN partners, enterprises linking multi-cloud clusters, and telemetry buyers) pay in stablecoins, fiat, or $\alpha$. <strong><code>80%</code> of gross external revenue</strong> is used programmatically to buy back $\alpha$ from the subnet liquidity pool, while <strong><code>20%</code></strong> is retained by the operating company to fund core engineering, hardware appliance certification, and business development.</li>
+<li><strong>Bootstrap-to-Usage Transition ($\alpha$ Parameter Step-Down):</strong><ul>
+<li>In <strong>Year 1</strong>, Mechanism 0 sets <code>ALPHA = 700,000</code> ppm ($70%$ capacity / $30%$ usage). At <code>100 Gbps</code> bonded capacity in the Base case, emissions pay operators <strong><code>$0.53 / Mbps / month</code></strong>—<strong><code>3.51x</code> the benchmark <code>$0.15 / Mbps / month</code> hub transit rate</strong>—creating a powerful supply-side magnet for datacenter operators with idle 95th-percentile headroom.</li>
+<li>In <strong>Years 2 and 3</strong>, as commercial traffic scales, <code>ALPHA</code> steps down (<code>70% -&gt; 50% -&gt; 40%</code> in Base; <code>60% -&gt; 40% -&gt; 30%</code> in Bull), shifting miner rewards from passive capacity standby to active, receipt-verified paid throughput.</li>
+</ul>
+</li>
+<li><strong>Compressing the Emission Subsidy Ratio:</strong> Across the broader Bittensor network, subnets typically require <code>$22–$40</code> of token emissions per <code>$1</code> of external customer revenue. Because bandwidth transit is an existing multi-billion-dollar institutional market, Transit Fabric compresses its <strong>Subsidy Ratio (Annual Emissions $\div$ Annual Customer Revenue)</strong> from <code>7.01x</code> in Year 1 to <strong><code>1.17x</code> in Year 3 (Base)</strong> and <strong><code>0.69x</code> in Year 3 (Bull)</strong>—where external customer revenue exceeds total network emissions paid to the subnet.</li>
+</ol>
+<h3 id="62-four-commercial-revenue-streams-bear-base-bull-model">6.2 Four Commercial Revenue Streams (<code>Bear / Base / Bull</code> Model)</h3>
+<p>The economic model (<code>docs/economics/PIPE_subnet_economic_model.xlsx</code>, benchmarked at <code>TAO = $279</code>, <code>884 TAO</code> registration cost = <code>$246,636</code>) projects four distinct revenue lines over Years 1–3:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th align="left">Revenue Stream</th>
+<th align="left">Buyer Profile</th>
+<th align="center">Base Case (Y1 $\to$ Y2 $\to$ Y3)</th>
+<th align="center">Bull Case (Y1 $\to$ Y2 $\to$ Y3)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>1. VPN Partner Backbone Transit</strong></td>
+<td align="left">Crypto-accepting VPN providers (<code>2 -&gt; 5 -&gt; 10</code> in Base; <code>3 -&gt; 10 -&gt; 25</code> in Bull)</td>
+<td align="center"><code>$192k</code> $\to$ <code>$720k</code> $\to$ <strong><code>$1.80M</code></strong></td>
+<td align="center"><code>$540k</code> $\to$ <code>$3.00M</code> $\to$ <strong><code>$12.00M</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>2. Enterprise &amp; AI Cluster SDN</strong></td>
+<td align="left">Multi-site / GPU cluster transit (<code>2 -&gt; 10 -&gt; 30</code> in Base; <code>5 -&gt; 30 -&gt; 100</code> in Bull)</td>
+<td align="center"><code>$72k</code> $\to$ <code>$480k</code> $\to$ <strong><code>$1.80M</code></strong></td>
+<td align="center"><code>$300k</code> $\to$ <code>$2.16M</code> $\to$ <strong><code>$9.60M</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>3. Pay-Per-GB Exit Credits</strong></td>
+<td align="left">Prosumers &amp; power users buying <code>BandwidthVouchers</code> (launches Phase 2 / Y2)</td>
+<td align="center"><code>$0</code> $\to$ <code>$150k</code> $\to$ <strong><code>$600k</code></strong></td>
+<td align="center"><code>$0</code> $\to$ <code>$750k</code> $\to$ <strong><code>$3.00M</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>4. Global Link-Metric Telemetry</strong></td>
+<td align="left">Latency/jitter/loss matrix sold to WAN monitoring &amp; trading desks</td>
+<td align="center"><code>$50k</code> $\to$ <code>$200k</code> $\to$ <strong><code>$500k</code></strong></td>
+<td align="center"><code>$100k</code> $\to$ <code>$750k</code> $\to$ <strong><code>$2.00M</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Total Annual Customer Revenue</strong></td>
+<td align="left"><strong>All 4 Commercial Lines</strong></td>
+<td align="center"><strong><code>$314k</code> $\to$ <code>$1.55M</code> $\to$ <code>$4.70M</code></strong></td>
+<td align="center"><strong><code>$940k</code> $\to$ <code>$6.66M</code> $\to$ <code>$26.60M</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Annual Programmatic $\alpha$ Buyback ($80%$)</strong></td>
+<td align="left"><strong>Direct Market Buy Pressure on $\alpha$</strong></td>
+<td align="center"><strong><code>$251k</code> $\to$ <code>$1.24M</code> $\to$ <code>$3.76M</code></strong></td>
+<td align="center"><strong><code>$752k</code> $\to$ <code>$5.33M</code> $\to$ <code>$21.28M</code></strong></td>
+</tr>
+</tbody></table></div>
+<h3 id="63-three-year-subnet-operating-company-financial-projections">6.3 Three-Year Subnet &amp; Operating Company Financial Projections</h3>
+<p>Valuation is modeled as the <strong>Blended Average</strong> of two institutional methodologies:</p>
+<ol>
+<li><strong>Emissions Comparable Multiple:</strong> Subnet annual incentive budget $\times$ comparable Bittensor dTAO market-cap-to-emissions multiples (<code>2.13x</code> Bear based on Chutes SN64; <code>2.69x</code> Base network average; <code>3.24x</code> Bull all-subnet multiple).</li>
+<li><strong>Infrastructure Revenue Multiple:</strong> Annual commercial revenue $\times$ infrastructure multiple (<code>10x</code> Bear, <code>15x</code> Base, <code>20x</code> Bull).</li>
+</ol>
+<div class="tw"><table>
+<thead>
+<tr>
+<th align="left">Metric</th>
+<th align="center">Bear (Y1 / Y2 / Y3)</th>
+<th align="center">Base (Y1 / Y2 / Y3)</th>
+<th align="center">Bull (Y1 / Y2 / Y3)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Network Emission Share</strong></td>
+<td align="center"><code>0.20%</code> / <code>0.30%</code> / <code>0.40%</code></td>
+<td align="center"><code>0.60%</code> / <code>1.00%</code> / <code>1.50%</code></td>
+<td align="center"><code>1.50%</code> / <code>3.00%</code> / <code>5.00%</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Bonded Transit Capacity</strong></td>
+<td align="center"><code>20</code> / <code>40</code> / <code>60 Gbps</code></td>
+<td align="center"><code>100</code> / <code>300</code> / <strong><code>800 Gbps</code></strong></td>
+<td align="center"><code>300</code> / <code>1,500</code> / <strong><code>5,000 Gbps</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Subnet Incentive Budget (<code>$/yr</code>)</strong></td>
+<td align="center"><code>$0.73M</code> / <code>$1.10M</code> / <code>$1.47M</code></td>
+<td align="center"><code>$2.20M</code> / <code>$3.67M</code> / <strong><code>$5.50M</code></strong></td>
+<td align="center"><code>$5.50M</code> / <code>$11.00M</code> / <strong><code>$18.33M</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Miner Capacity Pay (<code>$/Mbps/mo</code>)</strong></td>
+<td align="center"><code>$1.00</code> / <code>$0.66</code> / <code>$0.50</code></td>
+<td align="center"><code>$0.53</code> (<code>3.5x</code>) / <code>$0.21</code> / <code>$0.09</code></td>
+<td align="center"><code>$0.38</code> (<code>2.5x</code>) / <code>$0.10</code> / <code>$0.04</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Total Commercial Revenue (<code>$/yr</code>)</strong></td>
+<td align="center"><code>$36k</code> / <code>$169k</code> / <code>$375k</code></td>
+<td align="center"><code>$314k</code> / <code>$1.55M</code> / <strong><code>$4.70M</code></strong></td>
+<td align="center"><code>$940k</code> / <code>$6.66M</code> / <strong><code>$26.60M</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Programmatic $\alpha$ Buyback (<code>$/yr</code>)</strong></td>
+<td align="center"><code>$28.8k</code> / <code>$135.2k</code> / <code>$300k</code></td>
+<td align="center"><code>$251.2k</code> / <code>$1.24M</code> / <strong><code>$3.76M</code></strong></td>
+<td align="center"><code>$752k</code> / <code>$5.33M</code> / <strong><code>$21.28M</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Subsidy Ratio (Emissions / <code>$1</code> Rev)</strong></td>
+<td align="center"><code>20.37x</code> / <code>6.51x</code> / <code>3.91x</code></td>
+<td align="center"><code>7.01x</code> / <code>2.37x</code> / <strong><code>1.17x</code></strong></td>
+<td align="center"><code>5.85x</code> / <code>1.65x</code> / <strong><code>0.69x</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Subnet Market Cap — Blended (<code>$</code>)</strong></td>
+<td align="center"><code>$0.96M</code> / <code>$2.02M</code> / <strong><code>$3.44M</code></strong></td>
+<td align="center"><code>$5.31M</code> / <code>$16.55M</code> / <strong><code>$42.64M</code></strong></td>
+<td align="center"><code>$18.31M</code> / <code>$84.42M</code> / <strong><code>$295.70M</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Registration Payback Period</strong></td>
+<td align="center"><code>22.4 months</code> (Y1)</td>
+<td align="center"><strong><code>7.5 months</code> (Y1)</strong></td>
+<td align="center"><strong><code>3.0 months</code> (Y1)</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Operating Co. Gross Income (<code>$/mo</code>)</strong></td>
+<td align="center"><code>$17.2k</code> / <code>$25.9k</code> / <code>$34.5k</code></td>
+<td align="center"><code>$51.8k</code> / <code>$90.9k</code> / <strong><code>$166.5k</code></strong></td>
+<td align="center"><code>$114.4k</code> / <code>$270.9k</code> / <strong><code>$678.6k</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Operating Co. Net Income (<code>$/mo</code>)</strong></td>
+<td align="center"><code>-$22.8k</code> / <code>-$24.1k</code> / <code>-$25.5k</code></td>
+<td align="center"><code>-$8.2k</code> / <code>-$9.1k</code> / <strong><code>+$16.5k</code></strong></td>
+<td align="center"><code>+$34.4k</code> / <code>+$90.9k</code> / <strong><code>+$328.6k</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Operating Co. Valuation (Treasury + OpCo)</strong></td>
+<td align="center"><code>$0.13M</code> / <code>$0.27M</code> / <strong><code>$0.47M</code></strong></td>
+<td align="center"><code>$0.49M</code> / <code>$1.52M</code> / <strong><code>$5.91M</code></strong></td>
+<td align="center"><code>$6.20M</code> / <code>$18.81M</code> / <strong><code>$67.32M</code></strong></td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="7-commercial-entity-bandwidthos-inc-anchor-core-routers-go-to-market-workflows">7. Commercial Entity (&quot;BandwidthOS Inc.&quot;), Anchor Core Routers &amp; Go-To-Market Workflows</h2>
+<h3 id="71-market-positioning-programmable-naas-middle-mile-sd-wan-clearinghouse">7.1 Market Positioning: Programmable NaaS &amp; Middle-Mile SD-WAN Clearinghouse</h3>
+<p>While the Transit Fabric Bittensor subnet provides the decentralized incentive, measurement, and settlement layer, enterprise buyers, AI cloud operators, and commercial VPN providers require a standard commercial counterparty. <strong>BandwidthOS Inc.</strong> (the operating company in front of the subnet) operates as a <strong>Programmable Network-as-a-Service (NaaS) and Middle-Mile SD-WAN Clearinghouse</strong>—occupying the market intersection of <strong>Megaport / PacketFabric</strong> (elastic inter-datacenter transit) and <strong>Cloudflare Magic WAN / Argo</strong> (real-time latency/jitter-optimized routing), backed by tokenized physical supply.</p>
+<p>BandwidthOS Inc. sells two core commercial products and two high-margin network by-products:</p>
+<ol>
+<li><strong>Aggregated Transit on Demand (Elastic Middle-Mile):</strong> Customers establish a single eBGP/IPsec/WireGuard session (or rack a zero-touch 1U <code>Transit Fabric Edge</code> appliance) into the nearest Transit Fabric hub and gain instant burst transit across the entire global fleet of Mechanism 0 operators—priced 30–50% below hyperscale egress and legacy SD-WAN contracts because underlying miners are monetizing sunk 95th-percentile commit headroom.</li>
+<li><strong>Near-Real-Time QoS-Based Routing (&quot;BGP with a Brain&quot;):</strong> Powered by Mechanism 1 route solvers and continuous validator canary probing, customers steer traffic across five SLA-enforced QoS classes (<code>realtime</code>, <code>low_latency_hd</code>, <code>bulk</code>, <code>economy</code>, <code>resilient</code>) with <code>&lt; 300 ms</code> BFD automatic failover onto interior-node-disjoint backup paths.</li>
+<li><strong>Turnkey Multi-Region VPN Exit &amp; Edge Access:</strong> Wholesale and retail exit access via registered Exit Partners (<code>ADR-0004</code>) authorized by cryptographic <code>BandwidthVouchers</code>.</li>
+<li><strong>Global Link-Metric Telemetry Feed:</strong> Real-time pairwise latency, jitter, packet loss, and link-saturation matrices sold via <code>/v0/telemetry</code> to financial trading desks, CDNs, and WAN observability platforms.</li>
+</ol>
+<h3 id="72-the-anchor-backbone-strategy-company-owned-core-routers-in-tier-1-datacenters">7.2 The &quot;Anchor Backbone&quot; Strategy: Company-Owned Core Routers in Tier-1 Datacenters</h3>
+<p>To solve the two-sided marketplace cold-start problem, BandwidthOS Inc. deploys <strong>6–8 kernel-tuned Anchor Core Routers</strong> (bare-metal 10G/25G/100G servers running <code>bwos-node</code>, FRRouting <code>bgpd</code>/<code>bfdd</code>, IPsec/MACsec/WireGuard, and the <code>bwos-node tune-host</code> <code>FQ/BBR</code> offload profile) in primary global interconnect hubs (<code>IAD</code> Ashburn, <code>ORD</code> Chicago, <code>DFW</code> Dallas, <code>SJC</code> Silicon Valley, <code>FRA</code> Frankfurt, <code>AMS</code> Amsterdam, <code>LHR</code> London, and <code>NRT</code> Tokyo).</p>
+<p>This <strong>Anchor Backbone</strong> architecture serves three strategic functions:</p>
+<ul>
+<li><strong>Day-1 SLA &amp; Routing Spine:</strong> Guarantees deterministic transcontinental and transatlantic connectivity before third-party miner density reaches scale.</li>
+<li><strong>Emission-Subsidized Infrastructure (<code>3.51x</code> Cost Coverage in Year 1):</strong> By binding its Anchor Core Routers to Mechanism 0 UIDs while <code>ALPHA = 700,000</code> ppm ($70%$ capacity weight), BandwidthOS Inc. earns <code>$0.53 / Mbps / month</code> from Mechanism 0 capacity emissions against a <code>$0.15 / Mbps / month</code> wholesale hub transit cost—meaning protocol emissions subsidize the company&#39;s hardware and bandwidth commits from Day 1, on top of the <code>18%</code> subnet owner cut and lead validator yield.</li>
+<li><strong>Onboarding &amp; Peering Hubs (<code>Fleet Aggregator</code>):</strong> External datacenter miners, VPN Exit Partners, and prosumer edge nodes peer directly with BandwidthOS Inc.&#39;s regional Anchor Core Routers, which act as the high-fanout Ingress Gateways and BGP Route Reflectors for the fabric.</li>
+</ul>
+<h3 id="73-transaction-clearing-settlement-workflow-fiatusdc-to-on-chain-alpha">7.3 Transaction Clearing &amp; Settlement Workflow (Fiat/USDC to On-Chain $\alpha$)</h3>
+<blockquote>
+<p><strong>Version 1.1 note (ADR-0053):</strong> steps 1–3 are commercial metering only. In step 4, validators don&#39;t pay miners from receipts: miners are paid in emissions from capacity, availability and canary carriage. Customer revenue reaches them through the alpha price. Customers can reach the fabric without Transit Fabric software through registered gateways (ADR-0052).
+Enterprise customers never need to custody TAO/$\alpha$ or manage Subtensor hotkeys. BandwidthOS Inc. clears transactions end-to-end:</p>
+</blockquote>
+<ol>
+<li><strong>Commercial Invoicing:</strong> The customer pays BandwidthOS Inc. in USD (wire/ACH/Stripe) or USDC under a monthly commit or pay-per-GB agreement.</li>
+<li><strong>Cryptographic Quota Issuance (<code>BandwidthVoucher</code>):</strong> BandwidthOS Inc.&#39;s clearing server signs an Ed25519 <code>BandwidthVoucher</code> (<code>domain: &quot;bandwidth-voucher&quot;</code>) scoped to the customer&#39;s <code>client</code> keys, valid for window range $[w_{\text{from}}, w_{\text{to}}]$ and <code>max_paid_bytes</code>.</li>
+<li><strong>Automated On-Wire Metering (<code>ClientReceipt</code> + <code>HopReceipt</code>):</strong> The customer&#39;s edge daemon signs cumulative <code>ClientReceipts</code> while every transit hop along the solver-assigned BGP path co-signs <code>HopReceipts</code> every 30 seconds.</li>
+<li><strong>Programmatic 80/20 Clearing &amp; Zero-AP Miner Payouts:</strong> BandwidthOS Inc. retains <strong>20%</strong> in cash as its protocol fee and routes <strong>80%</strong> of customer revenue to programmatically buy $\alpha$ on the Subtensor dTAO liquidity pool. Validators verify all receipt chains every 360-block tempo and distribute $\alpha$ emissions directly to the participating operators and route solvers on-chain—eliminating manual accounts-payable settlement across hundreds of independent operators.</li>
+</ol>
+<hr>
+<h3 id="74-go-to-market-sequences-end-to-end-user-stories">7.4 Go-To-Market Sequences &amp; End-to-End User Stories</h3>
+<h4 id="sequence-1-beachhead-1-months-16-anchor-core-routers-subsidizing-onboarding-vpn-providers">Sequence 1 (Beachhead 1 — Months 1–6): Anchor Core Routers Subsidizing &amp; Onboarding VPN Providers</h4>
+<ul>
+<li><strong>Actors:</strong> <strong>BandwidthOS Inc.</strong> (Anchor Backbone &amp; Clearinghouse), <strong>Lantern VPN</strong> (a 40-city crypto-accepting commercial VPN provider), and <strong>Ridgeline Hosting</strong> (a regional colocation operator with 6 Gbps of idle 95th-percentile transit headroom).</li>
+<li><strong>End-to-End Workflow:</strong><ol>
+<li><strong>Anchor Deployment:</strong> BandwidthOS Inc. brings online 6 Anchor Core Routers (<code>100 Gbps</code> aggregate commit) in Ashburn, Chicago, Frankfurt, Amsterdam, Dallas, and Tokyo. Mechanism 0 capacity emissions (<code>$0.53/Mbps/mo</code>) cover the wholesale transit commit (<code>$0.15/Mbps/mo</code>) by <code>3.5x</code>.</li>
+<li><strong>Subsidized Pilot Onboarding:</strong> BandwidthOS Inc. onboards <strong>Lantern VPN</strong> onto a 30-day pilot, subsidized by the Anchor Core Routers&#39; capacity emissions. Lantern runs <code>bwos-node</code> on 10 of its busiest ingress/exit servers, peering via WireGuard/IPsec + eBGP with BandwidthOS Inc.&#39;s Anchor Routers.</li>
+<li><strong>Cryptographic SLA Proof (<code>PartnerPilotReport</code>):</strong> Over 4 weeks, validators probe every route and BandwidthOS Inc. generates an automated weekly <code>PartnerPilotReport</code> (<code>crates/bwos-core/src/validator.rs</code>) comparing Lantern&#39;s middle-mile traffic over Transit Fabric (<code>realtime</code> and <code>low_latency_hd</code> classes) against direct public BGP—demonstrating a <code>20–35%</code> reduction in transatlantic p95 RTT and jitter and sub-300 ms BFD failover during carrier brownouts.</li>
+<li><strong>Dual-Role Conversion (Customer + Exit Partner):</strong> Lantern signs a <code>$10,000/month</code> commercial backbone contract with BandwidthOS Inc. (paid in USDC/USD) to carry inter-city VPN traffic over Transit Fabric, <strong>and</strong> registers its 40 regional servers as official Transit Fabric <strong>Exit Partners</strong> (<code>ADR-0004</code>).</li>
+<li><strong>Flywheel Activation:</strong> BandwidthOS Inc. routes <code>$8,000/month</code> (<code>80%</code>) into programmatic $\alpha$ buybacks. Seeing the rising $\alpha$ price and verified paid volume, <strong>Ridgeline Hosting</strong> registers a Mechanism 0 UID, peers its 3 Gbps idle commit with BandwidthOS Inc.&#39;s Chicago and Frankfurt Anchor Routers, and begins earning both capacity (<code>cap_u</code>) and paid usage (<code>use_u</code>) emissions.</li>
+</ol>
+</li>
+</ul>
+<h4 id="sequence-2-beachhead-2-months-39-distributed-ai-neo-cloud-gpu-cluster-interconnects">Sequence 2 (Beachhead 2 — Months 3–9): Distributed AI / Neo-Cloud GPU Cluster Interconnects</h4>
+<ul>
+<li><strong>Actors:</strong> <strong>TensorForge Cloud</strong> (a distributed GPU provider operating H100/B200 clusters across Illinois, North Carolina, and Eastern Europe) and <strong>Mechanism 1 Route Solvers</strong>.</li>
+<li><strong>End-to-End Workflow:</strong><ol>
+<li><strong>Problem:</strong> TensorForge must synchronize 250 GB model checkpoints every hour between regional datacenters and stream low-latency token inference across nodes, but public BGP suffers from single-path TCP congestion and hyperscale cloud egress fees are prohibitive.</li>
+<li><strong>Peering &amp; QoS Tagging:</strong> TensorForge deploys <code>bwos-node</code> on its border gateways (<code>bwos-node tune-host -if eth0</code> enabling 64 MB socket buffers, <code>fq</code> pacing, and <code>BBR</code>), peers with BandwidthOS Inc.&#39;s Anchor Routers, and tags checkpoint replication as <code>class = &quot;bulk&quot;</code> ($80%$ bottleneck bandwidth / $20%$ latency) and inference streams as <code>class = &quot;realtime&quot;</code> ($\le 5\text{ ms}$ jitter).</li>
+<li><strong>Capacity-Aware Solver Execution:</strong> Mechanism 1 solvers (<code>routing::solve_capacity_aware</code>) compute multi-commodity flow tables that strip out congested links using quadratic congestion pricing (<code>CONGESTION_SURCHARGE_PPM</code>) and stripe TensorForge&#39;s bulk transfers across parallel Mechanism 0 transit paths.</li>
+<li><strong>Clearing:</strong> TensorForge pays BandwidthOS Inc. a monthly commit + per-TB burst fee in USD; BandwidthOS Inc. issues <code>BandwidthVouchers</code> and clears <code>80%</code> of revenue into $\alpha$ buybacks.</li>
+</ol>
+</li>
+</ul>
+<h4 id="sequence-3-beachhead-3-months-618-enterprise-ha-wan-resilient-telemetry-data-buyers">Sequence 3 (Beachhead 3 — Months 6–18): Enterprise HA WAN (<code>resilient</code>) &amp; Telemetry Data Buyers</h4>
+<ul>
+<li><strong>Actors:</strong> <strong>Coastline Labs</strong> (an enterprise linking three offices and a private compute cage) and <strong>QuantPulse</strong> (a low-latency financial infrastructure desk).</li>
+<li><strong>End-to-End Workflow:</strong><ol>
+<li><strong>Zero-Touch Appliance Deployment:</strong> Coastline racks a pre-flashed 1U <code>Transit Fabric Edge</code> appliance (<code>docs/adr/0009-edge-appliance.md</code>) at each site and enters the 1-line <code>bwos-node claim-code</code> token into BandwidthOS Inc.&#39;s portal. The appliance generates its <code>fc00::/8</code> identity locally; Coastline&#39;s IT team signs the <code>EdgeConfig</code> off-box (<code>domain: &quot;edge-config&quot;</code>), and no wallet keys ever touch the router.</li>
+<li><strong>Interior-Node-Disjoint HA (<code>resilient</code>):</strong> Coastline&#39;s inter-site traffic runs under <code>class = &quot;resilient&quot;</code>, which requires Mechanism 1 solvers to provision both a low-latency primary path and an <strong>interior-node-disjoint <code>backup_path</code></strong> (<code>BACKUP_INTERIOR_DISJOINT_MULT_PPM = 1,000,000</code>). When an upstream carrier link degrades, BFD (<code>3 × 200 ms</code>) fails traffic over to the disjoint backup path in under a second (measured 520-680 ms over the internet in Phase A; zero dropped TCP sessions is a goal, not measured).</li>
+<li><strong>Telemetry Monetization:</strong> <strong>QuantPulse</strong> subscribes to BandwidthOS Inc.&#39;s <code>/v0/telemetry</code> API (<code>$4,000/month</code>), consuming the live, validator-signed matrix of global inter-datacenter latency, jitter, and packet loss across all probed ASNs.</li>
+</ol>
+</li>
+</ul>
+<h4 id="sequence-4-phase-2-months-924-prosumer-desktop-transit-fabric-vpnapp-openwrt-mine-to-surf">Sequence 4 (Phase 2 — Months 9–24): Prosumer Desktop (<code>Transit Fabric VPN.app</code>), OpenWrt &amp; &quot;Mine-to-Surf&quot;</h4>
+<ul>
+<li><strong>Actors:</strong> <strong>Maya</strong> (a remote systems engineer on macOS and an OpenWrt home router) and a <strong>Fleet Aggregator UID</strong>.</li>
+<li><strong>End-to-End Workflow:</strong><ol>
+<li><strong>Instant <code>fc00::/8</code> Onboarding:</strong> Maya installs <code>Transit Fabric VPN.app</code> on her Mac (<code>bwos-client app</code>). Her client derives its <code>/128</code> <code>fc00::/8</code> address (<code>fce0:7248:...</code>) and connects to the nearest Transit Fabric Anchor Ingress Gateway.</li>
+<li><strong>Mine-to-Surf Enrollment (<code>ADR-0019</code>):</strong> Maya clicks <strong>&quot;Enroll in Prosumer Fleet&quot;</strong>, signing a <code>FleetEnrollment</code> (<code>commission_ppm &lt;= 20%</code>). While her Mac or OpenWrt router is online, it relays light edge transit and co-signs <code>HopReceipts</code>, earning proportional $\alpha$ credits from the aggregator&#39;s Mechanism 0 payouts.</li>
+<li><strong>Voucher Redemption &amp; System Tunneling:</strong> Her earned $\alpha$ automatically mints a signed <code>BandwidthVoucher</code> (<code>protocol_burn_ppm &gt;= 5%</code>). In the <code>Transit Fabric VPN.app</code> UI, Maya selects <strong>Europe Exit VPN (Romania)</strong> or <strong>US-East Exit VPN (North Carolina)</strong> and toggles on <strong>Route macOS system traffic</strong>, sending her Mac&#39;s end-to-end TLS 1.3 and SOCKS5 streams across the <code>fc00::/8</code> eBGP fabric to Lantern VPN&#39;s exit nodes—paid for seamlessly by her own contributed bandwidth or 1-click exit credits.</li>
+</ol>
+</li>
+</ul>
+<hr>
+<h2 id="8-security-privacy-wire-obscurity-analysis">8. Security, Privacy &amp; Wire-Obscurity Analysis</h2>
+<h3 id="81-resistance-to-economic-protocol-attacks">8.1 Resistance to Economic &amp; Protocol Attacks</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th align="left">Threat Vector</th>
+<th align="left">Protocol Defense Mechanism</th>
+<th align="left">Economic / Verification Outcome</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Self-Dealing / Wash-Trading</strong></td>
+<td align="left">Since 1.1, customer traffic is never credited (ADR-0053): paid bytes earn no emissions, so faking or steering them earns nothing. Canary carriage is validator-allocated (ADR-0051)</td>
+<td align="left">Zero gain by construction (1.0 measured <code>0.96x</code> under the retired voucher-burn design)</td>
+</tr>
+<tr>
+<td align="left"><strong>Hop Counter Inflation</strong></td>
+<td align="left">Bilateral <code>HopReceipt</code> co-signing (<code>0.5%</code> tolerance) + multi-hop chain conservation audit</td>
+<td align="left">Inflating interior hop is deterministically zeroed</td>
+</tr>
+<tr>
+<td align="left"><strong>Missing Middle Receipt</strong></td>
+<td align="left">Contiguous path receipt verification $(n_0, n_1) \dots (n_{k-1}, n_k)$</td>
+<td align="left">Entire incomplete path segment is zeroed</td>
+</tr>
+<tr>
+<td align="left"><strong>Capacity Over-Claiming</strong></td>
+<td align="left">Random 10s saturation capacity tests (<code>CAP_TEST_PERIOD = 900</code>) + <code>OVERCLAIM_PENALTY_PPM</code> (<code>20%</code> haircut for 24 windows)</td>
+<td align="left">Over-claiming yields <code>0.73x</code> return per real Mbps vs. <code>1.00x</code> honest</td>
+</tr>
+<tr>
+<td align="left"><strong>Selective Canary Prioritization</strong></td>
+<td align="left">Goal, not yet true: canaries still differ from paid flows in source, timing and size (threat model T19, Phase B Task 14); $Q_n$ penalizes latency/loss inflation</td>
+<td align="left">Dropping customer traffic degrades $Q_n$ and zeroes usage credit</td>
+</tr>
+<tr>
+<td align="left"><strong>Solver Copycatting / Sybil</strong></td>
+<td align="left">Commit-reveal + <code>EPSILON_ROUTE</code> (<code>2%</code>) margin + identical <code>gains_ppm</code> vector deduplication</td>
+<td align="left">Copycat solvers receive <code>0</code> Mechanism 1 weight</td>
+</tr>
+<tr>
+<td align="left"><strong>BGP Prefix Hijacking</strong></td>
+<td align="left"><code>/128</code> <code>fc00::/8</code> IPv6 address is <code>0xfc || SHA-512(SHA-512(pubkey))[0..15]</code></td>
+<td align="left">Cryptographically impossible without Ed25519 private key</td>
+</tr>
+<tr>
+<td align="left"><strong>Exit Node SSRF / Local Egress</strong></td>
+<td align="left">Strict target IP validation (<code>is_forbidden_egress_ip</code> blocks RFC 1918, loopback, link-local <code>169.254.0.0/16</code>, <code>fc00::/8</code>, and IPv4-mapped IPv6 <code>::ffff:0:0/96</code>)</td>
+<td align="left">Returns <code>HTTP 403 Forbidden</code> before socket connect</td>
+</tr>
+</tbody></table></div>
+<h3 id="82-wire-level-privacy-censorship-resistance-entry-neq-exit">8.2 Wire-Level Privacy &amp; Censorship Resistance (&quot;Entry $\neq$ Exit&quot;)</h3>
+<p>Compared to traditional single-hop VPNs (where a single server sees both the user&#39;s residential IP and their destination traffic, and whose IP address is publicly cataloged on commercial VPN blocklists), Transit Fabric&#39;s flat eBGP architecture provides three structural privacy advantages:</p>
+<ol>
+<li><strong>Compartmentalized Metadata:</strong> The <strong>Ingress Gateway</strong> knows the client&#39;s outer IP address but only sees packets destined for an <code>fc00::/8</code> exit address. <strong>Interior Transit Nodes</strong> see only encrypted <code>fc00::/8 -&gt; fc00::/8</code> backbone frames. The <strong>Exit Node</strong> connects to the public destination (<code>:443</code>), but sees only the client&#39;s <code>fc00::/8</code> overlay address—never the client&#39;s physical IP—while the payload remains end-to-end TLS 1.3 encrypted from the client&#39;s OS.</li>
+<li><strong>Immunity to Static Exit-IP Blocklists:</strong> Because the client connects to a <strong>Mechanism 0 Transit Ingress Node</strong> (which never makes outbound connections to websites and therefore never appears on commercial VPN exit blocklists), enterprise firewalls and DPI middleboxes cannot block the entry connection using standard VPN threat feeds.</li>
+<li><strong>Wire fingerprint (corrected 2026-11-01):</strong> datacenter backbone links that run IPsec ESP (<code>RFC 4303</code>) or MACsec look like enterprise interconnects. WireGuard links, which every home and no-root node uses, are easy to identify and don&#39;t share that property (ADR-0040).</li>
+</ol>
+<hr>
+<h2 id="9-empirical-evaluation-multi-region-benchmarks">9. Empirical Evaluation &amp; Multi-Region Benchmarks</h2>
+<h3 id="91-50-window-adversarial-incentive-simulation-bwos-sim">9.1 50-Window Adversarial Incentive Simulation (<code>bwos-sim</code>)</h3>
+<p>We evaluated Mechanism 0 and Mechanism 1 over 50 consecutive windows (<code>make sim</code>) across 9 competing operator archetypes. Measuring <strong>score share per unit of real physical Mbps supplied</strong> (normalized to Honest = <code>1.00x</code>), every adversarial strategy underperforms honest participation:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th align="left">Operator Strategy</th>
+<th align="center">Real Capacity Supplied</th>
+<th align="center">50-Window Mean Score Share</th>
+<th align="center">Efficiency vs. Honest (<code>1.00x</code>)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Honest Operator</strong></td>
+<td align="center">1,000 Mbps</td>
+<td align="center">20.69%</td>
+<td align="center"><strong><code>1.00x</code> (Baseline)</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Self-Dealer (Wash-Trader)</strong></td>
+<td align="center">1,000 Mbps</td>
+<td align="center">19.77%</td>
+<td align="center"><strong><code>0.96x</code></strong> <em>(1.0 design, penalized by voucher burn &amp; cap; since 1.1 paid traffic earns nothing)</em></td>
+</tr>
+<tr>
+<td align="left"><strong>Receipt Inflator</strong></td>
+<td align="center">1,000 Mbps</td>
+<td align="center">14.23%</td>
+<td align="center"><strong><code>0.69x</code></strong> <em>(inflated hop chains zeroed)</em></td>
+</tr>
+<tr>
+<td align="left"><strong>Over-Claimer ($3\times$ fake claim)</strong></td>
+<td align="center">1,000 Mbps</td>
+<td align="center">15.14%</td>
+<td align="center"><strong><code>0.73x</code></strong> <em>(<code>OVERCLAIM_PENALTY_PPM</code> haircut)</em></td>
+</tr>
+<tr>
+<td align="left"><strong>Flaky Operator ($60%$ uptime)</strong></td>
+<td align="center">1,000 Mbps</td>
+<td align="center">11.49%</td>
+<td align="center"><strong><code>0.56x</code></strong> <em>(quadratic <code>UPTIME_EXP = 2</code> penalty)</em></td>
+</tr>
+<tr>
+<td align="left"><strong>Canary-Gaming Operator</strong></td>
+<td align="center">1,000 Mbps</td>
+<td align="center">14.23%</td>
+<td align="center"><strong><code>0.69x</code></strong> <em>($Q_n$ latency/loss gate)</em></td>
+</tr>
+<tr>
+<td align="left"><strong>Sybil Operator (split across UIDs)</strong></td>
+<td align="center">1,000 Mbps</td>
+<td align="center">20.52%</td>
+<td align="center"><strong><code>0.99x</code></strong> <em>(linear invariance; extra registration cost)</em></td>
+</tr>
+</tbody></table></div>
+<h3 id="92-live-multi-region-hardware-in-the-loop-hil-benchmarks">9.2 Live Multi-Region Hardware-in-the-Loop (HIL) Benchmarks</h3>
+<p>We deployed <code>bwos-node</code> across three live cloud datacenter regions—<strong>US-Central (<code>US-IL-1</code>, Chicago, Illinois)</strong>, <strong>US-East (<code>US-NC-1</code>, Raleigh, North Carolina)</strong>, and <strong>Europe (<code>EU-RO-1</code>, Cluj-Napoca, Romania)</strong>—and connected a live macOS desktop client (<code>bwos-client app</code>, <code>fce0:7248:...</code>) over Wi-Fi (<code>en1</code>) using Layer-4 HTTPS <code>CONNECT</code> (<code>127.0.0.1:7781</code>) and <code>SOCKS5h</code> (<code>127.0.0.1:7782</code>) system routing.</p>
+<h4 id="table-1-in-datacenter-bwos-node-engine-overhead-us-il-1">Table 1: In-Datacenter <code>bwos-node</code> Engine Overhead (<code>US-IL-1</code>)</h4>
+<div class="tw"><table>
+<thead>
+<tr>
+<th align="left">Metric</th>
+<th align="center">Measured Value</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Control-Plane + Receipt Verification RTT ($p_{50}$)</strong></td>
+<td align="center"><strong><code>0.164 ms</code></strong> (<code>147 µs</code> min)</td>
+<td align="left">50 consecutive queries on <code>US-IL-1</code> (<code>Linux 6.8.0-79-generic</code>)</td>
+</tr>
+<tr>
+<td align="left"><strong>Control-Plane + Receipt Verification RTT ($p_{99}$)</strong></td>
+<td align="center"><strong><code>1.157 ms</code></strong></td>
+<td align="left">Includes JSON canonicalization &amp; Ed25519 verification</td>
+</tr>
+<tr>
+<td align="left"><strong>Node Direct Egress Line Rate (50 MB TLS 1.3)</strong></td>
+<td align="center"><strong><code>766.8 Mbps</code></strong> (<code>0.522 s</code>)</td>
+<td align="left">Sustained TLS 1.3 stream to Cloudflare CDN</td>
+</tr>
+</tbody></table></div>
+<h4 id="table-2-end-to-end-multi-region-overlay-performance-macos-client-ingress-bgp-transit-exit-internet">Table 2: End-to-End Multi-Region Overlay Performance (<code>macOS Client ──► Ingress ──► BGP Transit ──► Exit ──► Internet</code>)</h4>
+<div class="tw"><table>
+<thead>
+<tr>
+<th align="left">Selected Regional Exit</th>
+<th align="center">Overlay Hops</th>
+<th align="left">Verified Public Egress IP &amp; Cloudflare PoP</th>
+<th align="center">Signed <code>ClientReceipt</code> + Co-Signed <code>HopReceipt</code> RTT ($p_{50}$)</th>
+<th align="center">End-to-End TLS 1.3 Handshake (<code>:443</code>)</th>
+<th align="center">Sustained 10 MB TLS 1.3 Stream (to macOS Wi-Fi)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>US-Central (<code>US-IL-1</code> · Illinois)</strong></td>
+<td align="center"><strong>2 hops</strong></td>
+<td align="left"><code>(address redacted)</code> (<code>US</code> · PoP: <strong><code>MSP</code></strong>)</td>
+<td align="center"><strong>314.9 ms</strong> (<code>313.3 ms</code> min)</td>
+<td align="center"><strong>446.7 ms</strong></td>
+<td align="center"><strong>53.90 Mbps</strong> (<code>1.48 s</code>)</td>
+</tr>
+<tr>
+<td align="left"><strong>Europe (<code>EU-RO-1</code> · Romania)</strong></td>
+<td align="center"><strong>4 hops</strong></td>
+<td align="left"><code>(address redacted)</code> (<code>RO</code> · PoP: <strong><code>FRA</code></strong>)</td>
+<td align="center"><strong>759.6 ms</strong> (<code>755.4 ms</code> min)</td>
+<td align="center"><strong>824.5 ms</strong></td>
+<td align="center"><strong>35.72 Mbps</strong> (<code>2.24 s</code>)</td>
+</tr>
+<tr>
+<td align="left"><strong>US-East (<code>US-NC-1</code> · North Carolina)</strong></td>
+<td align="center"><strong>3 hops</strong></td>
+<td align="left"><code>(address redacted)</code> (<code>US</code> · PoP: <strong><code>IAD</code></strong>)</td>
+<td align="center"><strong>539.2 ms</strong> (<code>441.7 ms</code> min)</td>
+<td align="center"><strong>569.2 ms</strong></td>
+<td align="center"><strong>27.69 Mbps</strong> (<code>2.89 s</code>)</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="10-normative-protocol-parameters">10. Normative Protocol Parameters</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th align="left">Parameter</th>
+<th align="left">Default Value</th>
+<th align="left">Normative Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>ALPHA</code></td>
+<td align="left"><code>700_000</code> ppm ($70%$)</td>
+<td align="left">Mechanism 0 capacity weight vs. verified usage weight ($30%$)</td>
+</tr>
+<tr>
+<td align="left"><code>UPTIME_EXP</code></td>
+<td align="left"><code>2</code></td>
+<td align="left">Exponent $k$ on probe availability $A_u$ in capacity scoring</td>
+</tr>
+<tr>
+<td align="left"><code>W_PAID</code> / <code>W_FREE</code> / <code>W_CANARY</code></td>
+<td align="left"><code>1_000_000</code> / <code>250_000</code> / <code>100_000</code> ppm</td>
+<td align="left">Traffic class weights in Mechanism 0 usage scoring</td>
+</tr>
+<tr>
+<td align="left"><code>USAGE_SHARE_CAP</code></td>
+<td align="left"><code>250_000</code> ppm ($25%$)</td>
+<td align="left">Maximum usage share any single UID may capture</td>
+</tr>
+<tr>
+<td align="left"><code>RECEIPT_TOLERANCE_PPM</code></td>
+<td align="left"><code>5_000</code> ppm ($0.5%$)</td>
+<td align="left">Maximum allowed counter divergence between adjacent hops</td>
+</tr>
+<tr>
+<td align="left"><code>CAP_TOLERANCE_PPM</code></td>
+<td align="left"><code>100_000</code> ppm ($10%$)</td>
+<td align="left">Allowed shortfall in random saturation capacity tests</td>
+</tr>
+<tr>
+<td align="left"><code>OVERCLAIM_PENALTY_PPM</code></td>
+<td align="left"><code>200_000</code> ppm ($20%$)</td>
+<td align="left">Haircut below measured capacity when a node over-claims</td>
+</tr>
+<tr>
+<td align="left"><code>EPSILON_ROUTE</code></td>
+<td align="left"><code>20_000</code> ppm ($2%$)</td>
+<td align="left">Required improvement margin to unseat the incumbent route table</td>
+</tr>
+<tr>
+<td align="left"><code>LADDER_N</code> / <code>LADDER_DECAY_PPM</code></td>
+<td align="left"><code>8</code> / <code>500_000</code> ppm</td>
+<td align="left">Mechanism 1 ladder: rungs and each rung&#39;s weight relative to the one above (replaces <code>WINNER_SHARE</code>)</td>
+</tr>
+<tr>
+<td align="left"><code>CLONE_DISTANCE_PPM</code></td>
+<td align="left"><code>20_000</code> ppm ($2%$)</td>
+<td align="left">A table this close to an earlier-committed one scores 0</td>
+</tr>
+<tr>
+<td align="left"><code>OVERLAY_BASE_ASN</code></td>
+<td align="left"><code>4_200_000_000</code></td>
+<td align="left">Base RFC 6996 4-byte private ASN for <code>fc00::/8</code> eBGP peers</td>
+</tr>
+<tr>
+<td align="left"><code>MAX_REALTIME_JITTER_US</code></td>
+<td align="left"><code>5_000</code> µs ($5\text{ ms}$)</td>
+<td align="left">Hard jitter SLA gate for <code>realtime</code> routes</td>
+</tr>
+<tr>
+<td align="left"><code>MAX_REALTIME_LOSS_PPM</code></td>
+<td align="left"><code>5_000</code> ppm ($0.5%$)</td>
+<td align="left">Hard packet loss SLA gate for <code>realtime</code> routes</td>
+</tr>
+<tr>
+<td align="left"><code>PROTOCOL_VOUCHER_BURN_PPM</code></td>
+<td align="left"><code>50_000</code> ppm ($5%$)</td>
+<td align="left">Retired in 1.1 (ADR-0053): vouchers are commercial only and carry no protocol burn</td>
+</tr>
+<tr>
+<td align="left"><code>MAX_AGGREGATOR_COMMISSION_PPM</code></td>
+<td align="left"><code>200_000</code> ppm ($20%$)</td>
+<td align="left">Maximum commission a Fleet Aggregator UID can deduct from sub-nodes</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="11-conclusion">11. Conclusion</h2>
+<p>Transit Fabric demonstrates that an open, decentralized network does not have to choose between cryptographic verifiability and datacenter line-rate performance. By deriving every node&#39;s <code>/128</code> <code>fc00::/8</code> IPv6 identity from its Ed25519 key, flattening the control plane into end-to-end eBGP with competitive Mechanism 1 route solvers, isolating public internet egress to registered Exit Partners (<code>ADR-0004</code>), and enforcing conservation of flow via co-signed <code>HopReceipts</code>, <code>ClientReceipts</code>, and burn-backed <code>BandwidthVouchers</code>, Transit Fabric transforms idle global transit capacity into a programmable, censorship-resistant, institutional-grade backbone.</p>
+
+</main>
+<footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
+<a href="https://github.com/transitfabric/releases/releases">Releases</a> ·
+<a href="https://github.com/transitfabric/releases/issues">Issues</a> ·
+<a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a></footer>
+</body></html>

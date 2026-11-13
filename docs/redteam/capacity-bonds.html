@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Capacity bonds spec | Transit Fabric red-team pack</title><meta name="description" content="Bonds backing declared capacity."><link rel="stylesheet" href="../style.css"></head><body>
+<header><a class="brand" href="../index.html">Transit Fabric releases</a>
+<nav><a href="../index.html">Home</a><a href="../quickstart.html">Quick start</a><a href="../known-limits.html">Known limits</a><a href="../bounty.html">Bounty</a><a href="../redteam/index.html">Red team</a><a href="../claim.html">Claim credit</a><a href="../leaderboard.html">Leaderboard</a></nav></header>
+<main>
+<p class="notice">Taken from the Transit Fabric source repository at commit <code>91be12e</code> (<code>91be12ef98b775c7f045124e6b8c686c15439650</code>, main), file <code>docs/specs/capacity-bonds.md</code>. Links into the private source tree are shown as plain text. <a href="capacity-bonds.md">Raw Markdown</a> · <a href="index.html">Red-team pack</a></p>
+<h1 id="spec-capacity-bonds">Spec: capacity bonds</h1>
+<p>Status: draft · Implemented in <code>crates/bwos-core/src/scoring/mod.rs</code> · See ADR-0006</p>
+<p>Bittensor has no native slashing for subnet-defined behavior. v0 therefore uses a <strong>reputation bond</strong>: the operator&#39;s future emissions are what&#39;s at risk. v1 may add an escrow contract on Bittensor EVM (OQ-2).</p>
+<h2 id="declaration">Declaration</h2>
+<p>Operators commit a capacity declaration on chain (hash) and serve the object:</p>
+<pre><code class="language-json">{&quot;v&quot;:0,&quot;hotkey&quot;:&quot;&lt;ss58&gt;&quot;,&quot;netuid&quot;:&lt;int&gt;,&quot;window_from&quot;:&lt;int&gt;,&quot;nodes&quot;:[{&quot;node&quot;:&quot;&lt;pubkey hex&gt;&quot;,&quot;mbps&quot;:3000,&quot;cost_ppm&quot;:800000}],&quot;hotkey_sig&quot;:&quot;&lt;hex&gt;&quot;}
+</code></pre>
+<p>A declaration has <code>1..=MAX_DECLARATION_NODES</code> entries (<code>MAX_DECLARATION_NODES = 1024</code>), sorted and unique by <code>node</code>, and is signed with <code>hotkey_sig</code>. Each node entry may optionally declare <code>cost_ppm</code>, which must be in <code>[MIN_COST_PPM = 200_000, MAX_COST_PPM = 2_000_000]</code>; the default is <code>1_000_000</code> ppm = <code>1.00x</code> (<code>ADR-0018</code>). An operator&#39;s declared <code>cost_ppm</code> sets its base hop transit cost for Mechanism 1 solvers AND scales its Mechanism 0 billable volume <code>V_bill</code> by <code>cost_ppm / 1_000_000</code>, so discounting <code>cost_ppm</code> attracts least-cost and <code>low_latency_hd</code> routes in exchange for a proportional per-byte rate discount.</p>
+<p>Changes are judged field by field (ADR-0018 §3, <code>can_update_declaration</code>, TV-16):</p>
+<ul>
+<li><strong>Lowering a node&#39;s <code>mbps</code> is free.</strong> It applies from the next window, so an operator can always lower capacity to stay out of the overclaim haircut.</li>
+<li><strong>Node additions take effect mid-epoch.</strong> A node first declared mid-epoch gets its declared <code>mbps</code> at once, and its declared <code>cost_ppm</code> capped at <code>1_000_000</code> (1.0x).</li>
+<li><strong>Everything else waits for the next epoch boundary</strong> (the next multiple of <code>CAP_CHANGE_WINDOWS</code>, default 24, below). That covers any change to <code>cost_ppm</code>, up or down, any <code>mbps</code> raise, and node removals or moves to another UID. A declaration that lowers <code>mbps</code> and also changes <code>cost_ppm</code> gets the <code>mbps</code> decrease now; the cost change waits for the next epoch boundary.</li>
+<li>Operator tooling (<code>can_update_declaration</code>) requires a new declaration&#39;s <code>window_from</code> to be strictly greater than the previous one&#39;s. <strong>Scoring does not enforce it, because epochs make it unnecessary.</strong> Validators date a declaration by the chain read that first names it, not by <code>window_from</code> (below), and a node&#39;s state only changes at fixed epoch boundaries. A backdated or replayed <code>window_from</code> therefore changes nothing. Scoring only ignores a declaration whose <code>window_from</code> is after the read window.</li>
+</ul>
+<p>Whether to allow immediate cost decreases that restart the raise clock is OQ-54; the current answer is no, because ADR-0018 stands.</p>
+<h3 id="where-the-cooldown-is-enforced-t56-pb-31">Where the cooldown is enforced (<code>[T56]</code>, PB-31)</h3>
+<p><code>validator::run_tempo</code> never scores the raw <code>TempoInput::declarations</code>. It scores each node&#39;s declaration as it stands in the current <strong>cooldown epoch</strong>: the windows <code>[k * CAP_CHANGE_WINDOWS, (k + 1) * CAP_CHANGE_WINDOWS)</code> (<code>validator::DeclarationEpoch</code>, <code>tempo_declaration_epoch</code>).</p>
+<p><strong>What one read counts</strong> (<code>validator::node_declarations</code>). A declaration counts from the window after the chain commitment that names it. The validator reads the UID&#39;s on-chain commitment at block <code>w * tempo - 1</code>, the last block before window <code>w</code>, and the declaration it names counts from window <code>w</code>. Of that read, an entry counts only if all of these hold:</p>
+<ul>
+<li>the declaration is valid and for this <code>netuid</code>;</li>
+<li>its <code>window_from &lt;= w</code>;</li>
+<li>it is signed by the UID&#39;s metagraph hotkey at that read, and the signature verifies (<code>CapacityDeclaration::verify</code>: sr25519 for an SS58 hotkey, ed25519 for a hex one; a missing or all-zero <code>hotkey_sig</code> fails, audit S4, <code>scoring.md</code> §Capacity declarations are verified);</li>
+<li>the node is bound to that UID at that read.</li>
+</ul>
+<p>A declaration signed by any other hotkey, or an entry for a node bound to another UID, is ignored. It neither changes nor resets anything, and nobody can set a rival node&#39;s cost.</p>
+<p><strong>Per-node epoch state.</strong> State is kept per node, whichever UID the node is bound to:</p>
+<ul>
+<li><strong>At the epoch&#39;s first window,</strong> each declared node takes the read&#39;s <code>mbps</code> and <code>cost_ppm</code>.</li>
+<li><strong>Later in the epoch,</strong> a known node keeps its epoch <code>cost_ppm</code>, and its <code>mbps</code> becomes the lower of its current value and the read&#39;s. A node first declared mid-epoch gets its declared <code>mbps</code> at once, and its declared <code>cost_ppm</code> capped at the default <code>1_000_000</code>. So a fresh node key can discount at once but cannot price above the default before the next epoch; after that its cost is held like any other node&#39;s.</li>
+<li><strong>A node absent from a read keeps its state.</strong> That covers a UID that withdrew its declaration, a declaration signed by the wrong hotkey, and a node moved to another UID. Such a node is still billed, and its links still priced, at its carried <code>cost_ppm</code> and <code>mbps</code> until the epoch ends.</li>
+<li><strong>At the next epoch&#39;s first window,</strong> nothing is carried. An undeclared node then has no declared capacity and the default cost.</li>
+</ul>
+<p>So every <code>cost_ppm</code> change and every <code>mbps</code> raise takes effect at the next epoch boundary: changes in force are at least <code>CAP_CHANGE_WINDOWS</code> windows apart. A raise committed just before a boundary applies sooner than 24 windows after the previous change committed, but never sooner than 24 windows after the previous change took effect.</p>
+<p><strong>Billing at the solved-on cost</strong> (<code>validator::billing_cost_ppm</code>, run_tempo step 5). The production table for window <code>W</code> was solved on the snapshot built at <code>W - 1</code>, whose links were priced with each node&#39;s epoch cost at <code>W - 1</code> (<code>TempoOutcome::next_snapshot_costs</code>, passed back with the snapshot as <code>TempoInput::current_snapshot_costs</code>) (pass <code>Some</code> even when the map is empty; <code>None</code> means billing at the epoch cost). Mechanism 0 bills each node&#39;s paid and free bytes at</p>
+<pre><code>min(epoch cost at W, cost in the solved-on snapshot)    (a node missing from the solved-on costs: 1_000_000)
+</code></pre>
+<p>So routes chosen at an old price are never billed at a higher one. That includes a raise at an epoch boundary, a withdrawal at a boundary, and a re-keyed node (sims <code>epoch_boundary_raise</code>: 0 mis-priced windows; <code>rekey_mid_epoch</code>: at most 1.0x the solved-on cost). A decrease is billed at once. When <code>current_snapshot_costs</code> is <code>None</code> (not supplied), the epoch cost is billed.</p>
+<p><strong>Determinism.</strong> The epoch state is a pure function of the chain reads from the epoch&#39;s first window, at most <code>CAP_CHANGE_WINDOWS</code> reads (the documented lookback bound). It has no other history, so every validator agrees whatever its local history:</p>
+<ul>
+<li>A validator that scored window <code>W - 1</code> passes its state forward: <code>TempoOutcome::declaration_epoch</code> goes into the next tempo&#39;s <code>TempoInput::declaration_epoch</code>. <code>bwos-validator --state-dir</code> caches it in <code>accepted-declarations.json</code>. The cache holds the state before and after the last tempo, so re-running a window after a restart is idempotent. The state stays out of the published outcome JSON.</li>
+<li>The cache never fails a tempo. If it can&#39;t be saved (for example, key churn pushed the epoch past <code>MAX_EPOCH_NODES</code> = 196,608 nodes), the validator warns, scores the window anyway, and the next tempo rebuilds the epoch from the reads.</li>
+<li>Any other validator passes the epoch&#39;s earlier reads as <code>TempoInput::declaration_reads</code> and gets the same state. That covers a validator with no state, one restarting after downtime, and one whose cache is from another epoch.</li>
+<li>A validator with neither starts the epoch at the current read. It can then disagree with its peers until the epoch ends, so the live validator loop MUST fill <code>declaration_reads</code> after any gap (PB-14). <code>bwos-validator</code> warns when it has to fall back this way.</li>
+</ul>
+<p>Since Task 19b the declaration is named through the commitment manifest (ADR-0036): the manifest&#39;s <code>capacity-declaration</code> slot holds its hash, read at block <code>w * tempo - 1</code> from manifests that cover <code>w</code> (<code>identity.md</code> §Commitment manifest). The domain is active from window 0 on <code>local</code> and <code>test</code> only; its mainnet activation is OQ-45. A UID&#39;s manifest lapses after two windows (<code>covers</code>), and its declaration with it, so operators re-commit at least every other window (OQ-210).</p>
+<h2 id="verified-capacity-per-node">Verified capacity per node</h2>
+<pre><code>measured  = lower median of achieved Mbps across capacity tests in the last CAP_PENALTY_WINDOWS windows
+peak      = max(declared, declared Mbps of this node in each of the last CAP_PENALTY_WINDOWS windows)
+if no tests yet:                verified = 0
+elif measured &gt;= declared:      verified = declared
+elif measured &gt;= declared * (1e6 - CAP_TOLERANCE_PPM)/1e6:
+                                verified = measured
+else:                           verified = measured * (1e6 - OVERCLAIM_PENALTY_PPM)/1e6
+if measured &lt; peak * (1e6 - CAP_TOLERANCE_PPM)/1e6:
+                                verified = min(verified, measured * (1e6 - OVERCLAIM_PENALTY_PPM)/1e6)
+</code></pre>
+<p><strong>Team tests and the ramp (ADR-0039, Phase B Task 4Dc).</strong> Once team tests replace single-agent tests, the rule above is replaced by the one below. A team test pushes the ramped rate, capped at the team&#39;s budgets (<code>measurement.md</code> §Team capacity tests), not the declaration. So comparing with the declaration would haircut every honest node while its ramp climbs, and every node faster than the team can push. Each test is therefore recorded as <code>(team_t, pushed_t, ratio_t)</code>, from <code>measurement.md</code>&#39;s combining rule:</p>
+<pre><code>S_t         = Σ rate_i over the whole scheduled team, revealed or not   (cohort member n: Σ_i rate_{i,n})
+pushed_t    = the rate test t is judged on:
+                team test:                min(declared at t, S_t)
+                cohort member n:          min(declared_n at t, S_t)
+                legacy single-agent test: the peak declaration over the span (below)
+j           = the lower-median revealed member by c_i / rate_i, c_i = min(m_i, rate_i), ties to the lower hotkey
+median_t    = c_j * S_t / rate_j
+measured_t  = min(Σ c_i over the revealed members, median_t)
+team_t      = min(declared, measured_t + bg_t)  after Task 12b
+            = min(declared, measured_t)         before Task 12b (bg_t lifts only the ratio)
+              in kbps, floored to whole Mbps once
+ratio_t     = team test:                min(1e6, (c_j * S_t + bg_t * rate_j) * 1e6 / (rate_j * pushed_t))
+                                        none with fewer than CAP_TEAM_MIN_VALIDATORS revealed members
+              legacy single-agent test: min(1e6, achieved_t * 1e6 / pushed_t)
+              (a test with fewer than two revealed members, or with pushed_t = 0, isn&#39;t a sample)
+measured    = lower median of team_t (or achieved_t) over the tests in the last CAP_PENALTY_WINDOWS windows,
+              leaving out a budget-starved cohort member&#39;s tests (ratio only)
+ratio       = lower median of ratio_t over the same tests that have one
+if no tests yet:                                       verified = 0
+elif no test has a ratio_t, or ratio &gt;= 1e6 - CAP_TOLERANCE_PPM:
+                                                       verified = min(declared, measured)
+else:                                                  verified = min(declared, measured) * (1e6 - OVERCLAIM_PENALTY_PPM) / 1e6
+</code></pre>
+<p>All of it is <code>u128</code> integer arithmetic with floor division, and lower medians sort ascending and take index <code>(n-1)/2</code>. <code>ratio_t</code> is one division with no intermediate floor, so an honest node gets exactly <code>1e6</code> (round 5 A; worked example in <code>measurement.md</code> §Team capacity tests: <code>C = 1000</code>, four members at 275).</p>
+<p><strong>In code (Task 4Dc, fix round 1).</strong> <code>validator::team_verified_capacity</code> is this rule over a node&#39;s <code>validator::CapTestRecord</code>s (<code>team</code>, <code>pushed</code>, <code>ratio_ppm</code>, <code>ratio_only</code>). <code>run_tempo</code> uses it in team mode (<code>TempoInput.block_hashes</code> supplied <strong>and</strong> endpoint dedupe on: team mode MUST NOT run while the endpoint stake trigger fails, Task 4Dc fix round 5, T124), through <code>validator::team_verified_capacities</code> (review R1):</p>
+<ul>
+<li><p><strong>The span holds both kinds of test.</strong> A node&#39;s records are its team tests (node tests and team cohort members&#39; tests) in the last <code>CAP_PENALTY_WINDOWS</code> entries of <code>cap_team_history</code> plus this window&#39;s <code>TempoOutcome.cap_team_tests</code>, <strong>and</strong> its single-agent <code>cap:</code> tests in the last <code>CAP_PENALTY_WINDOWS</code> entries of <code>cap_test_history</code> (this window&#39;s included), each a legacy record (<code>CapTestRecord::legacy</code>) judged against the node&#39;s peak declaration over the span. The two histories aren&#39;t index-aligned, so the peak is the conservative declaration.</p>
+</li>
+<li><p><strong>No freeze, no fallback.</strong> In team mode both histories gain an entry every window, empty or not, so old single-agent tests age out after <code>CAP_PENALTY_WINDOWS</code> windows. A node with no record in the span has no tests yet and gets <code>0</code>; nothing falls back to the single-agent rule.</p>
+</li>
+<li><p><strong>Budget-starved cohort members (red team F8).</strong> A cohort member whose scheduled rates fall short of its <code>R(n)</code> is recorded <code>ratio_only</code>: its <code>ratio_t</code> counts, its <code>team_t</code> doesn&#39;t enter <code>measured</code>.</p>
+</li>
+<li><p><strong>Units (OQ-91, closed).</strong> Rates are kbps and <code>m_i</code> is exact from the ack, so an honest small node is measured to within 1% of its goodput from 20 Mbps up (sim <code>small_declared_honest</code>). Only the final floor to whole Mbps remains, a documented residual (red team N7): about 0.90x of goodput at 10 Mbps, 0.95x at 20 Mbps, 0.97-0.99x at 30-50 Mbps.</p>
+</li>
+<li><p><strong>Headroom isn&#39;t an overclaim (round 4 RR1, RT1).</strong> Members stream about <code>1.1 × declared</code>, but <code>ratio_t</code> divides by <code>pushed_t = min(declared, sent_t)</code> while <code>median_t</code> scales by all of <code>sent_t</code>. A node that carries its declaration has <code>ratio_t = 1e6</code>. Under-declaring to <code>C / 1.1</code> to dodge the headroom earns <code>C / 1.1</code>, less than declaring <code>C</code> (sim <code>headroom_underdeclarer</code>, at most 1.0x).</p>
+</li>
+<li><p><strong>A climbing ramp isn&#39;t an overclaim.</strong> Neither is a node faster than the team can push. A declaration above what was pushed is not an overclaim while the ramp is still climbing, or when the team&#39;s budgets cap the rate (red team RT2): a node that delivers what was pushed has <code>ratio_t = 1e6</code>.</p>
+</li>
+<li><p><strong>Small reveal sets don&#39;t judge (round 4 RT5, round 5 D; red team F9).</strong> A test with fewer than <code>CAP_TEAM_MIN_VALIDATORS</code> revealed members counts in <code>measured</code>, still capped by the median term at two members, but has no <code>ratio_t</code>, so two members never decide a haircut. A test with one revealed member isn&#39;t a sample.</p>
+</li>
+<li><p><strong>A missing batch doesn&#39;t haircut (OQ-93, closed in Task 4Dc fix round 1).</strong> A member that streamed but revealed nothing stays in <code>S_t</code>, so the node is judged on everything it was sent: an honest node is never haircut for it, near its declaration too (97%: kept 0.75x, sim <code>withholding_near_declaration</code>), and withholding never lifts a node above an honest declarer of its real capacity (sim <code>void_by_withholding</code>).</p>
+</li>
+<li><p><strong>Over-reporting members are capped (red team F1).</strong> <code>measured_t</code> sums <code>c_i = min(m_i, rate_i)</code>, so a colluder&#39;s inflated result adds no more than its own share; one colluder is bounded at <code>(k-1)/(k-2)</code> (<code>measurement.md</code> §Team capacity tests, &quot;Residuals&quot;).</p>
+</li>
+<li><p><strong>Griefing members can&#39;t force a haircut (red team RT3).</strong> <code>ratio_t</code> comes from the lower median of per-member ratios, never from <code>Σ</code>. A minority of members that zero or omit their samples can&#39;t force a haircut, and can&#39;t lift one. One griefer on a team of <code>k</code> cuts the victim&#39;s <code>measured_t</code> to no less than <code>(k−1)/k</code>: 0.75x at <code>k = 4</code>, 0.67x at <code>k = 3</code> (sim <code>sample_omission_griefer</code>).</p>
+</li>
+<li><p><strong>Background counts.</strong> Background counts in <code>ratio_t</code>, so real traffic never looks like an overclaim. Before Task 12b it is the window average and lifts only the ratio, never <code>team_t</code>. After Task 12b it is measured from receipts bracketing the test and counts in both (<code>measurement.md</code> §Background traffic).</p>
+</li>
+<li><p><strong>What still triggers the haircut.</strong> It applies only when the node fails to carry what was actually pushed in at least half of its recent tests.</p>
+</li>
+<li><p><strong>Lowering the declaration after failing.</strong></p>
+<ul>
+<li>It doesn&#39;t change past <code>ratio_t</code>, so the haircut lasts until passing re-tests are half of the rolling history: about 5 tests, about 12 windows at the default test period.</li>
+<li><code>CAP_PENALTY_WINDOWS</code> stays at 24 (red team RT7). The peak-declaration rule kept the haircut for the full 24, so the haircut is shorter now. But a dodger still earns no more than an honest declarer, because it carries the haircut while its failed tests are the majority, and it can&#39;t be credited above what it carries. T27&#39;s bound is restated as dodger ≤ honest, and Task 4Dc re-runs <code>declaration_dodger</code>.</li>
+</ul>
+</li>
+<li><p><strong>Legacy single-agent tests are close to the old rule, not the same (review RR nit).</strong> For legacy tests <code>pushed_t</code> is the declaration at the time. The haircut test is then &quot;the lower median of per-test <code>achieved / declared_at_test</code> is below tolerance&quot;. The old rule compared the median achieved rate with the current and the peak declaration. The two agree while the declaration is constant. They differ when the declaration changes, where the per-test form judges each test against the declaration it was run under.</p>
+</li>
+</ul>
+<p><strong>The single-agent rule&#39;s peak check.</strong> The overclaim haircut is checked against the <strong>peak</strong> declaration over the rolling window (<code>[C-04]</code>, <code>RT2-4</code>), so lowering a declaration after a failed test does not lift the haircut early: it lasts until the overclaimed declaration is more than <code>CAP_PENALTY_WINDOWS</code> windows old. Validators keep one <code>node -&gt; declared Mbps</code> map per window (<code>TempoOutcome::declared_capacities</code>, passed back as <code>TempoInput::declaration_history</code>; <code>validator::tempo_verified_capacities</code>). The same rule applies to an honest downgrade: an operator that removes capacity should lower its declaration at least <code>CAP_PENALTY_WINDOWS</code> windows before the measured capacity falls below <code>peak * (1 - CAP_TOLERANCE_PPM)</code>.</p>
+<p>Only capacity tests acknowledged by the node under test count (<code>measurement.md</code>, <code>cap-test-ack</code>, <code>RT2-3</code>): a <code>cap:&lt;node&gt;</code> sample without a valid node-signed ack for that validator and window is scored as a failed (<code>0</code> Mbps) test, so several node keys cannot borrow one operator&#39;s real sink.</p>
+<p>Failed or unreachable capacity tests are recorded as <code>0</code> Mbps samples (<code>measurement.md</code>), so a node that goes dark loses verified capacity once failures reach the lower median. Verified capacity also bounds Mechanism 0 usage credit: a node is never credited more bytes per window than <code>verified_mbps * 125_000 * WINDOW_BLOCKS * BLOCK_SECONDS</code> (<code>scoring.md</code>, <code>[SCR-11]</code>).</p>
+<p><strong>Endpoint dedupe (<code>[T24]</code>).</strong> For scoring, verified capacity is pooled per dedupe group (nodes whose validator-observed public endpoint shares an IPv4 /24, or for IPv6-only endpoints an IPv6 /32 (tunnel-broker /48s share the broker&#39;s /32), across UIDs; one group per node, no transitive merging): the group is credited at most its largest single verified capacity, split pro rata among its members (<code>scoring.md</code> §Endpoint dedupe, <code>scoring::dedupe_diverse_node_capacities</code>). N node keys behind one pipe that pass N sequential tests (OQ-18) therefore earn one pipe&#39;s capacity term. ASN alone does not pool capacity.</p>
+<p><strong>Cohort credit (<code>[T28]</code>, OQ-18, OQ-20).</strong> Let <code>P</code> be the group&#39;s members with verified capacity <code>&gt; 0</code>. Every cohort <code>C</code> (<code>2..=MAX_CAP_COHORT_NODES</code> nodes, <code>measurement.md</code> §Cohort capacity tests) whose members are all in <code>P</code> is a candidate, and the group is credited</p>
+<pre><code>pool = max(largest single verified, max over candidates C of min(cohort_verified(C), Σ_{n in C} verified(n)))
+</code></pre>
+<p>instead of the largest single verified capacity, where <code>cohort_verified(C)</code> is the lower median of that exact membership&#39;s aggregated cohort throughput (<code>Σ acked bytes * 8 / common span</code>) over the last <code>CAP_COHORT_FRESH_ENTRIES</code> (8) cohort-history entries; a cohort not re-tested within them has no credit. <strong>In team mode a cohort counts toward its group&#39;s credit only with at least <code>CAP_COHORT_TEAM_MIN_SAMPLES</code> (2) samples in that span</strong> (Task 4Dc fix round 5, red team B1(b), T125); with fewer it has no credit, so it can&#39;t raise the group above its largest single. A cohort test started short at its last chance (<code>measurement.md</code> §Team capacity tests) records its aggregate capped at <code>Σ max(verified_prev(n), CAP_RAMP_FLOOR_MBPS)</code> over its members (red team L3, B1(a)). A cohort falls due about once per 2.5 windows, so with no attacker about 4% of cohort-windows have lapsed credit, about 15% in team mode with two samples required, and the group is paid as its largest member for them (Task 4Dc red team L1, T116(a), T125, OQ-95). The team schedule&#39;s round-robin weight is this pooled figure, with a node that has no endpoint weighing 0 and, while dedupe is off, each UID&#39;s lower-median node (<code>validator::schedule_weights</code>, T114, T124). The pool is split pro rata as above (zero-capacity members get <code>0</code>). Candidates are never summed: disjoint chunks of a group above 16 nodes, or cohorts tested at different times, could have been served one after another by one pipe. Honest operators with separate uplinks in one /24 (or one provider IPv6 /32) are therefore paid up to what validators measured at the same time (sim <code>colocated_cohort_honest</code>: 1.000x, 0.333x with sequential tests only), while N keys on one pipe still earn one pipe, whether tested sequentially or in a cohort (sim <code>sequential_key_replay</code>: 1.000x / 0.998x). A cohort containing a node outside <code>P</code> does not count. A zero-capacity key bound into the /24, a key rotated every window, or a new member does not void an earlier cohort result (red-team Pass-7 <code>cohort_burner_griefer</code>: attacker 1.256x and co-located victims 0.573x before, 1.000x / 1.000x after); a 17-node group keeps its best 16-node chunk. The group&#39;s credit can never exceed the verified sum of a cohort&#39;s members or what that cohort test measured.</p>
+<p><code>CAP_TOLERANCE_PPM</code> (10%) protects honest operators from the <code>OVERCLAIM_PENALTY_PPM</code> (20%) haircut during minor measurement jitter without ever crediting unmeasured phantom capacity above <code>measured</code>. Over-declaring is strictly worse than or at best equal to declaring honestly, with one residual after Task 12b: a node that stalls real routed traffic during its tests and carries it just outside them can gain up to about 1.11x through credited background (about 1.48x estimated with one colluding team member), as set out below and in <code>measurement.md</code> §Background traffic.</p>
+<p><strong>Why declaring honestly stays the best strategy under the ramp (ADR-0039).</strong> Compare the alternatives with declaring your real capacity <code>C</code> from day one:</p>
+<ul>
+<li><strong>Declaring above <code>C</code>.</strong> Credit is never more than what the team measured plus credited background (<code>min(declared, measured)</code>, with <code>measured</code> including at most a quarter background after Task 12b, and none before).<ul>
+<li><strong>Before Task 12b,</strong> background lifts only the ratio, so credit is what the team measured, however the node times its traffic (sim <code>bg_priority_overdeclarer</code>, at most 1.0x).</li>
+<li><strong>After Task 12b,</strong> background is the slowest in-test interval of each stream&#39;s receipt run, with no missing receipts and intervals of at most 3 blocks, so it is close to the traffic the node carried during the test (red team RT4, round 5 F1, sim <code>bracket_widener</code>, at most 1.0x). <strong>This is not exactly 1.0x.</strong> A node that stalls real routed traffic during a test and carries it in the overlapping intervals gains up to about 1.11x (sim <code>bracket_stall_carry</code>, bound 1.12x), and up to an estimated 1.48x with one colluding member at <code>k = 4</code> (<code>measurement.md</code> §Background traffic, OQ-41). Measured in Task 12b under rule (a), a claimed block at or one below the co-signer&#39;s view, it is 1.175x, and 1.734x with the colluding member; <code>bracket_stall_carry</code> is model-only until PB-38 (OQ-106).</li>
+<li>Once the ramp pushes past what the node carries, <code>ratio_t</code> falls below <code>1e6 - CAP_TOLERANCE_PPM</code> in most tests, and the 20% haircut applies to everything. Over-declaring within the tolerance is credited what was measured, never more.</li>
+</ul>
+</li>
+<li><strong>Declaring below <code>C</code>.</strong> A node that declares <code>C / 1.1</code>, so that the headroom pushes exactly <code>C</code>, is credited <code>C / 1.1</code> (sim <code>headroom_underdeclarer</code>, at most 1.0x).</li>
+<li><strong>Declaring below <code>C</code>, raising it in steps.</strong> The tested rate is capped at <code>declared * 1.1</code>, and raises are allowed once per <code>CAP_CHANGE_WINDOWS</code>. So the step declarer&#39;s tested rate, and with it <code>measured</code>, climbs no faster than the honest declarer&#39;s, and usually slower.</li>
+<li><strong>Declaring <code>C</code>.</strong> The ramp alone sets the pace, every test delivers what was pushed, and verified capacity reaches <code>C</code> as fast as any strategy can.<ul>
+<li>This holds for a 10 Gbps honest declarer too. At the default four 2,500 Mbps budgets the team pushes the full 10 Gbps.</li>
+<li>A node faster than the team&#39;s budgets is tested and verified at the team cap with no haircut, under-credited but never penalised (sim <code>honest_ramp_no_haircut</code>, Task 4Dc).</li>
+</ul>
+</li>
+</ul>
+<h2 id="peer-load-calls-adr-0056-with-red-team-revision-1-specified-and-simulated-not-scored">Peer-load calls (ADR-0056 with red-team revision 1; specified and simulated, not scored)</h2>
+<p>Once peer-load tests score (<code>measurement.md</code> §Peer-load capacity tests), they replace the team-test rule above for the nodes they call.</p>
+<pre><code>sample    = 0                                                   if the call is short
+          = min(declared, usable, slices_run × floor(Σ h / n))   otherwise; hidden slices only
+verified  = 0                                                   if the bond applies in the current cooldown epoch
+          = min(declared, lower median of the samples of calls and retests ending in the last CAP_PEER_LOOKBACK_WINDOWS windows)
+          = 0                                                   with no such sample
+</code></pre>
+<p><strong>Short calls and retests.</strong> A call is short when <code>slices_run × upper_median(h) &lt; min(declared, slices_run × slice) × (1e6 − CAP_TOLERANCE_PPM) / 1e6</code>.</p>
+<ul>
+<li><strong>A short call only zeroes its own sample.</strong> It is retested once at a secret block within <code>CAP_PEER_RETEST_WINDOWS</code> windows, with a fresh draw of slices, relays and hidden validators.</li>
+<li><strong>Why.</strong> Anyone can make one call short by flooding the node&#39;s port by about 12% while it runs. The first draft&#39;s public call blocks and one-strike bond let a flood for 0.1% of the day zero a node (sim <code>capacity_flood_framing</code>).</li>
+</ul>
+<p><strong>The bond.</strong> The node&#39;s capacity credit is zeroed from the window the bond applies in to the next multiple of <code>CAP_CHANGE_WINDOWS</code> when either:</p>
+<ul>
+<li><strong>the retest is short too</strong> (<code>peer_load::bond_applies</code>); or</li>
+<li><strong>the node has had <code>CAP_PEER_SHORT_STRIKES</code> short calls in the epoch</strong> (<code>peer_load::strikes_apply</code>).</li>
+</ul>
+<p><strong>Why the upper median.</strong> A majority of the hidden slices must be short, so two griefing validators of four cost a sample half its value but can&#39;t make a call short. Applying the bond takes a majority in both the call and its retest: <code>P(majority)²</code> a call (sim <code>capacity_validator_grief_quorum</code>).</p>
+<p><strong>What can make a call short, and what can&#39;t.</strong></p>
+<ul>
+<li><strong>Can&#39;t:</strong> a peer&#39;s report, <code>usable</code>, or a short pool.</li>
+<li><strong>Can:</strong> load. A flood of the node&#39;s port, a drawn source oversending on a node without link headroom, or a drawn relay dropping hidden slices (T173, T217). The retest and secret call times bound a blind flooder&#39;s damage by its own flood duty. A flooder tipped off by a drawn participant isn&#39;t bounded (OQ-167).</li>
+</ul>
+<p><strong>Source duty.</strong> A source whose duty record&#39;s median delivered ratio is below <code>CAP_PEER_DUTY_MIN_PPM</code> (0.95), over at least <code>CAP_PEER_DUTY_MIN_SLICES</code> slices, is charged the same bond on its own capacity credit (<code>peer_load::source_duty_charged</code>). The node under test never is.</p>
+<p><strong>What the bond deters, and what it doesn&#39;t</strong> (sim <code>capacity_burst_renter_calls</code>; founder, 2026-11-08, OQ-43):</p>
+<ul>
+<li><strong>A node that can&#39;t deliver when called</strong> is within <code>1 + tol</code> per unit of cost at every share of calls it can meet. It is worse off outright when it meets few calls.</li>
+<li><strong>The strikes rule is load-bearing here.</strong> The retest alone left a renter at up to 1.162x per unit of cost; with strikes the worst is 1.055x (10x declaration, held 75% of the time).</li>
+<li><strong>An honest node</strong> whose calls hit a transient fault 1% of the time keeps its credit.</li>
+<li><strong>A 95th-percentile renter isn&#39;t deterred.</strong> It holds its port speed at every call, and calls touch about 1% of its billing buckets. PB-38&#39;s sustained-carriage bound has to catch it (OQ-136).</li>
+</ul>
+<p>The helpers are <code>peer_load::call_outcome</code>, <code>bond_applies</code>, <code>strikes_apply</code>, <code>verified_kbps</code> and <code>source_duty_charged</code>, pure <code>u128</code> arithmetic.</p>
+<h2 id="v1-escrow-not-built">v1 escrow (not built)</h2>
+<p>An EVM contract holding stake per operator, slashed on a validator-majority attestation of failed tests. Needs: attestation format, quorum, appeal window, and who receives slashed funds. Tracked in OQ-2.</p>
+
+</main>
+<footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
+<a href="https://github.com/transitfabric/releases/releases">Releases</a> ·
+<a href="https://github.com/transitfabric/releases/issues">Issues</a> ·
+<a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a></footer>
+</body></html>
