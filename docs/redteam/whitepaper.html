@@ -4,7 +4,7 @@
 <header><a class="brand" href="../index.html">Transit Fabric releases</a>
 <nav><a href="../index.html">Home</a><a href="../quickstart.html">Quick start</a><a href="../known-limits.html">Known limits</a><a href="../bounty.html">Bounty</a><a href="../redteam/index.html">Red team</a><a href="../claim.html">Claim credit</a><a href="../leaderboard.html">Leaderboard</a></nav></header>
 <main>
-<p class="notice">Taken from the Transit Fabric source repository at commit <code>940dc25</code> (<code>940dc2529d04c2b2c116bfa27ba738cf7868f718</code>, main), file <code>docs/whitepaper.md</code>. Links into the private source tree are shown as plain text.</p>
+<p class="notice">Taken from the Transit Fabric source repository at commit <code>10a682c</code> (<code>10a682c933278f64f47f65e25711cd66d74552ac</code>, main), file <code>docs/whitepaper.md</code>. Links into the private source tree are shown as plain text.</p>
 <h1
 id="transit-fabric-a-cryptographically-verifiable-fc008-ebgp-transit-fabric-and-multi-commodity-routing-market-on-bittensor">Transit
 Fabric: A Cryptographically Verifiable <code>fc00::/8</code> eBGP
@@ -55,6 +55,13 @@ stay. The 1.1 buyback figure and the capacity-pay projection in Sequence
 1.1 item 7 and 1.2 items 3 and 5 point to the new §6 and §7.2, and
 §4.1's step 5 no longer describes the <code>ALPHA</code> step-down as
 current. The company form is still not decided (Inc. or LLC).</li>
+<li><strong>Owner share, BandwidthOS's nodes and telemetry</strong>
+(founder, 2026-11-13; ADR-0064 §8, OQ-301 closed). The subnet owner's
+18% emission share is the owner's own, not BandwidthOS revenue.
+BandwidthOS's nodes are a reference example: their pay is ordinary
+operator pay, BandwidthOS burns TAO like every reseller, and its node
+UIDs are not separately disclosed. The telemetry feed is a later
+phase.</li>
 </ol>
 <h2 id="what-changed-in-version-12">What changed in version 1.2</h2>
 <p>These decisions were made between 2026-11-08 and 2026-11-13 and are
@@ -1270,7 +1277,8 @@ directly. The economic model's inputs
 Bittensor's <code>3,600 TAO/day</code> of network emissions and the
 per-subnet split of <strong>41% to miners</strong> (here, nodes and
 solvers), <strong>41% to validators</strong> and <strong>18% to the
-subnet owner</strong>.</li>
+subnet owner</strong>. The owner's share is the subnet owner's own; it
+is not BandwidthOS revenue and not a protocol fund.</li>
 <li><strong>The commercial flow (designed, ADR-0063 proposed).</strong>
 Customers pay resellers. Resellers buy wholesale capacity by burning
 TAO, and pay gateways a port fee. Payments, vouchers, credits, client
@@ -1564,10 +1572,10 @@ treasury rule is open (OQ-301).</p></li>
 </ul>
 <p><strong>What the old projections covered and the current model
 doesn't.</strong> The 1.1 model's VPN backbone and pay-per-GB exit
-revenue depend on exits, a later phase. The telemetry feed (§7.1) has no
-settlement path in ADR-0063. The repository's historical economic model
-still assumes the retired buyback and company fee, so this section uses
-only its emission inputs.</p>
+revenue depend on exits, a later phase. The telemetry feed (§7.1) is a
+later phase: it has no settlement path in ADR-0063. The repository's
+historical economic model still assumes the retired buyback and company
+fee, so this section uses only its emission inputs.</p>
 <hr />
 <h2
 id="7-bandwidthos-the-model-home-commercial-operations--go-to-market-workflows">7.
@@ -1625,7 +1633,7 @@ sub-second BFD failover onto interior-node-disjoint backup paths
 phase:</strong> Wholesale and retail exit access via registered Exit
 Partners (<code>ADR-0004</code>) authorized by
 <code>BandwidthVouchers</code>, which are commercial only.</li>
-<li><strong>Global Link-Metric Telemetry Feed, planned:</strong>
+<li><strong>Global Link-Metric Telemetry Feed, later phase:</strong>
 pairwise latency, jitter, packet loss, and link-saturation matrices from
 validator measurement, for trading desks, CDNs, and WAN observability
 platforms.</li>
@@ -1657,9 +1665,11 @@ eBGP with no route reflectors, and no node or company chooses the
 topology. A BandwidthOS node is a gateway only if it registers as one
 under ADR-0052's published criteria, which any datacenter operator can
 meet.</li>
-<li><strong>Earn emissions like any operator's.</strong> How that pay
-sits with BandwidthOS's treasury rule, that its alpha comes only from
-retail margin, is open (OQ-301).</li>
+<li><strong>Earn emissions like any operator's, and buy like any
+reseller.</strong> What its nodes earn is ordinary operator pay, and
+when BandwidthOS resells capacity it burns TAO at the same clearing
+price as everyone else (ADR-0063). Its node UIDs have no special
+standing and are not separately disclosed (ADR-0064 §8).</li>
 </ul>
 <p>Today on testnet, the team runs public nodes that peer with testers'
 nodes on request (§2.3), and every validator on subnet 611 is the team's
@@ -1836,7 +1846,7 @@ upstream carrier link degrades, BFD (<code>3 × 200 ms</code>) fails
 traffic over to the disjoint backup path in under a second (measured
 520-680 ms over the internet in Phase A; zero dropped TCP sessions is a
 goal, not measured).</li>
-<li><strong>Telemetry Monetization (planned):</strong>
+<li><strong>Telemetry Monetization (later phase):</strong>
 <strong>QuantPulse</strong> subscribes to a telemetry API
 (<code>$4,000/month</code>), consuming the live, validator-signed matrix
 of global inter-datacenter latency, jitter, and packet loss across all

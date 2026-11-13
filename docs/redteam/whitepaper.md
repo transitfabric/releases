@@ -1,4 +1,4 @@
-> Taken from the Transit Fabric source repository at commit 940dc25 (940dc2529d04c2b2c116bfa27ba738cf7868f718, main), file docs/whitepaper.md. Links into the private source tree are shown as plain text.
+> Taken from the Transit Fabric source repository at commit 10a682c (10a682c933278f64f47f65e25711cd66d74552ac, main), file docs/whitepaper.md. Links into the private source tree are shown as plain text.
 
 # Transit Fabric: A Cryptographically Verifiable `fc00::/8` eBGP Transit Fabric and Multi-Commodity Routing Market on Bittensor
 
@@ -20,6 +20,7 @@ These changes follow the founder's answers to the 1.2 review on 2026-11-13.
 3. **BandwidthOS may run nodes, as a reference deployment** (founder, 2026-11-13; ADR-0064 §8; §7.2). Open-source code and a public example for others to copy, with no protocol privilege and no special role. The hub-node projection and every "anchor" role are removed. How these nodes' emissions sit with the company's treasury rule is open (OQ-301).
 4. **Go-to-market sequences** (§7.4). The contract figures stay. The 1.1 buyback figure and the capacity-pay projection in Sequence 1 are removed; the BFD failover change in §7.1 stays.
 5. **Change notes, abstract and §4.1** brought in line: 1.1 item 7 and 1.2 items 3 and 5 point to the new §6 and §7.2, and §4.1's step 5 no longer describes the `ALPHA` step-down as current. The company form is still not decided (Inc. or LLC).
+6. **Owner share, BandwidthOS's nodes and telemetry** (founder, 2026-11-13; ADR-0064 §8, OQ-301 closed). The subnet owner's 18% emission share is the owner's own, not BandwidthOS revenue. BandwidthOS's nodes are a reference example: their pay is ordinary operator pay, BandwidthOS burns TAO like every reseller, and its node UIDs are not separately disclosed. The telemetry feed is a later phase.
 
 ## What changed in version 1.2
 
@@ -387,7 +388,7 @@ Bittensor subnets have a fixed number of UID slots (e.g., 256), so desktop and h
 
 Transit Fabric keeps protocol pay and customer money in two separate flows. Nothing from the second ever enters the first as a scoring input.
 
-1. **The emissions flow (live on testnet).** Nodes, gateways, solvers and validators are paid only in the subnet's alpha emissions, allocated by what validators measure themselves: capacity and uptime today, canary carriage once PB-38 scores it (Mechanism 0), and routing quality (Mechanism 1). No node is paid for carrying traffic directly. The economic model's inputs (`docs/economics/README.md`, as of 2026-10-17) are Bittensor's `3,600 TAO/day` of network emissions and the per-subnet split of **41% to miners** (here, nodes and solvers), **41% to validators** and **18% to the subnet owner**.
+1. **The emissions flow (live on testnet).** Nodes, gateways, solvers and validators are paid only in the subnet's alpha emissions, allocated by what validators measure themselves: capacity and uptime today, canary carriage once PB-38 scores it (Mechanism 0), and routing quality (Mechanism 1). No node is paid for carrying traffic directly. The economic model's inputs (`docs/economics/README.md`, as of 2026-10-17) are Bittensor's `3,600 TAO/day` of network emissions and the per-subnet split of **41% to miners** (here, nodes and solvers), **41% to validators** and **18% to the subnet owner**. The owner's share is the subnet owner's own; it is not BandwidthOS revenue and not a protocol fund.
 2. **The commercial flow (designed, ADR-0063 proposed).** Customers pay resellers. Resellers buy wholesale capacity by burning TAO, and pay gateways a port fee. Payments, vouchers, credits, client receipts and the rate card are **never a scoring input**, so faking, buying or steering "paid" traffic earns nothing, and mishandling customer traffic can only lower a score (ADR-0053 §2).
 
 **How customer money reaches nodes and solvers: through the pool, never through receipts** (ADR-0053 §4, ADR-0063). A wholesale purchase buys the subnet's alpha from its pool with TAO and destroys it. Each purchase puts TAO into the pool and removes the alpha it bought. A subnet's share of network emissions depends on its pool: the economic model takes it as set by the alpha price, and ADR-0065 counts a burn as TAO flow into the pool for the emission share. Either way, more customers make every participant's emissions worth more. Nobody, the company included, can move any participant's slice: allocation within the subnet is set only by measurement (ADR-0049, ADR-0053). One caution from ADR-0063 (OQ-288): `SubnetAlphaOut` doesn't drop on a burn, so a supply figure derived from it overstates circulating alpha.
@@ -470,7 +471,7 @@ The OQ-291 replay found that at 25%/40% the guard for new purchases was closed i
 
   where the fabric fee and port fees are set by the card's clearing prices, and its own costs include buying TAO and the transaction fee on each purchase. None of these terms has a published value yet, so the paper gives no figure for it. Under its published treasury policy (ADR-0064 §6, ADR-0063 §6), its alpha comes only from retail margin and sits on hotkeys that never set weights; its holdings are disclosed quarterly; it keeps a balance buffer of a set number of windows; it sells no alpha within `N` windows (proposed 140, about 7 days) of its own wholesale purchases, and at most 5% a month on an announced schedule. Any corporate buyback it chooses to run is kept out of the fabric burn ledger. Nodes BandwidthOS may run are a reference deployment and are paid like anyone's (§7.2); how that pay sits with the treasury rule is open (OQ-301).
 
-**What the old projections covered and the current model doesn't.** The 1.1 model's VPN backbone and pay-per-GB exit revenue depend on exits, a later phase. The telemetry feed (§7.1) has no settlement path in ADR-0063. The repository's historical economic model still assumes the retired buyback and company fee, so this section uses only its emission inputs.
+**What the old projections covered and the current model doesn't.** The 1.1 model's VPN backbone and pay-per-GB exit revenue depend on exits, a later phase. The telemetry feed (§7.1) is a later phase: it has no settlement path in ADR-0063. The repository's historical economic model still assumes the retired buyback and company fee, so this section uses only its emission inputs.
 
 ---
 
@@ -486,7 +487,7 @@ A reseller can sell two core products and, later, two by-products:
 1. **Aggregated Transit on Demand (Elastic Middle-Mile), planned:** Customers establish a single eBGP/IPsec/WireGuard session into a registered gateway (ADR-0052), or reach it over a cross-connect or proxy, and gain burst transit across the global fleet of Mechanism 0 operators. The aim is pricing 30–50% below hyperscale egress and legacy SD-WAN contracts, because underlying miners are monetizing sunk 95th-percentile commit headroom. The zero-touch 1U `Transit Fabric Edge` appliance is a later phase.
 2. **Near-Real-Time QoS-Based Routing ("BGP with a Brain"), planned as a product:** Powered by Mechanism 1 route solvers and validator measurement, customers steer traffic across five SLA-enforced QoS classes (`realtime`, `low_latency_hd`, `bulk`, `economy`, `resilient`) with sub-second BFD failover onto interior-node-disjoint backup paths (520–680 ms measured over the internet in Phase A).
 3. **Turnkey Multi-Region VPN Exit & Edge Access, later phase:** Wholesale and retail exit access via registered Exit Partners (`ADR-0004`) authorized by `BandwidthVouchers`, which are commercial only.
-4. **Global Link-Metric Telemetry Feed, planned:** pairwise latency, jitter, packet loss, and link-saturation matrices from validator measurement, for trading desks, CDNs, and WAN observability platforms.
+4. **Global Link-Metric Telemetry Feed, later phase:** pairwise latency, jitter, packet loss, and link-saturation matrices from validator measurement, for trading desks, CDNs, and WAN observability platforms.
 
 ### 7.2 BandwidthOS Nodes: a Reference Deployment (planned)
 
@@ -496,7 +497,7 @@ BandwidthOS may run nodes, but only as a **reference implementation**: open-sour
 
 - **Run the same open-source stack as anyone's** (for a kernel node: `bwos-node`, FRRouting `bgpd`/`bfdd`, WireGuard and the `bwos-node tune-host` `FQ/BBR` profile), and how they are deployed is published with the rest of the reference implementation (ADR-0064 §3).
 - **Get no protocol privilege** (ADR-0064 §4). They are measured, paid and peered under the same Mechanism 0 rules as every node: self-service peering today, the draw and solver peering plans later (§2.3, §4.2.1). They hold no special role: not an anchor, an ingress point, a route reflector or a peering hub. The fabric is flat eBGP with no route reflectors, and no node or company chooses the topology. A BandwidthOS node is a gateway only if it registers as one under ADR-0052's published criteria, which any datacenter operator can meet.
-- **Earn emissions like any operator's.** How that pay sits with BandwidthOS's treasury rule, that its alpha comes only from retail margin, is open (OQ-301).
+- **Earn emissions like any operator's, and buy like any reseller.** What its nodes earn is ordinary operator pay, and when BandwidthOS resells capacity it burns TAO at the same clearing price as everyone else (ADR-0063). Its node UIDs have no special standing and are not separately disclosed (ADR-0064 §8).
 
 Today on testnet, the team runs public nodes that peer with testers' nodes on request (§2.3), and every validator on subnet 611 is the team's own until outside validators join.
 
@@ -541,7 +542,7 @@ Enterprise customers never need to custody TAO or $\alpha$ or manage Subtensor h
 * **End-to-End Workflow:**
   1. **Zero-Touch Appliance Deployment (later phase):** Coastline racks a pre-flashed 1U `Transit Fabric Edge` appliance (`docs/adr/0009-edge-appliance.md`) at each site and enters the 1-line `bwos-node claim-code` token into BandwidthOS's portal. The appliance generates its `fc00::/8` identity locally; Coastline's IT team signs the `EdgeConfig` off-box (`domain: "edge-config"`), and no wallet keys ever touch the router.
   2. **Interior-Node-Disjoint HA (`resilient`):** Coastline's inter-site traffic runs under `class = "resilient"`, which requires Mechanism 1 solvers to provision both a low-latency primary path and an **interior-node-disjoint `backup_path`** (`BACKUP_INTERIOR_DISJOINT_MULT_PPM = 1,000,000`). When an upstream carrier link degrades, BFD (`3 × 200 ms`) fails traffic over to the disjoint backup path in under a second (measured 520-680 ms over the internet in Phase A; zero dropped TCP sessions is a goal, not measured).
-  3. **Telemetry Monetization (planned):** **QuantPulse** subscribes to a telemetry API (`$4,000/month`), consuming the live, validator-signed matrix of global inter-datacenter latency, jitter, and packet loss across all probed ASNs.
+  3. **Telemetry Monetization (later phase):** **QuantPulse** subscribes to a telemetry API (`$4,000/month`), consuming the live, validator-signed matrix of global inter-datacenter latency, jitter, and packet loss across all probed ASNs.
 
 #### Sequence 4 (later phase): Prosumer Desktop, OpenWrt & "Mine-to-Surf"
 * **Actors:** **Maya** (a remote systems engineer on macOS and an OpenWrt home router) and a **Fleet Aggregator UID**.
