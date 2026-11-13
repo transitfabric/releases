@@ -37,3 +37,4 @@ button.btn:disabled{opacity:.45;cursor:not-allowed}
 [hidden]{display:none!important}
 main{overflow-wrap:anywhere}pre{overflow-wrap:normal}
 .hero-logo{display:block;width:120px;height:120px;border-radius:16px;margin:24px 0 0}
+.mw{display:inline-block;max-width:100%;overflow-x:auto;overflow-y:hidden;vertical-align:middle}

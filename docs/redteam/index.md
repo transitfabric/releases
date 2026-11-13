@@ -15,7 +15,7 @@ Read the [bounty page](../bounty.html) first: it has the scope, the out-of-scope
 | [Identity spec](identity.html) ([.md](identity.md)) | Node keys, hotkeys, bindings and consents. |
 | [Encoding spec](encoding.html) ([.md](encoding.md)) | Canonical encoding and domain-separated signatures. |
 | [Threat model](threat-model.html) ([.md](threat-model.md)) | Every attack we have written down, its mitigation and its status. Read it before you file. |
-| [Whitepaper](whitepaper.html) ([.md](whitepaper.md)) | The design in one document. |
+| [Whitepaper](whitepaper.html) ([.md](whitepaper.md), [PDF](Transit_Fabric_Whitepaper.pdf)) | The design in one document. |
 | [The simulator](simulator.html) | `bwos-sim`, static binaries for Linux x86_64 and aarch64, with checksums and sample output. A walk-through of reproducing a finding in it. |
 | [Finding template](FINDING.md) | The format we want findings in. The "Finding" Issue form has the same fields. |
 
