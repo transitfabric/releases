@@ -30,7 +30,7 @@ Transit Fabric is a Bittensor subnet for a decentralized network fabric, running
 
 ## Checking a node and reporting a bug
 
-1. `bwos doctor --json` (add `--kind noroot|container --state-dir <dir>`; the default is a kernel node). It only reads files. Exit code 0 means every check passed; each failing check has a registry `code` and a `fix`. The codes are listed in the skill. System One fixes some itself (`validator_set_stale`, `inputs_apply_lock_stuck`), tells you the step for others, and reports crashes and faults automatically with a fixed set of fields (no logs, addresses or keys). `report.auto` is `off`, `crashes` or `faults`.
+1. `bwos doctor --json` (add `--kind noroot|container --state-dir <dir>`; the default is a kernel node). It only reads files. Exit code 0 means every check passed; each failing check has a registry `code` and a `fix`. The codes are listed in the skill. System One fixes some itself (`inputs_apply_lock_stuck`; `validator_set_stale` in a container), prepares others for the human (on a kernel node a stale validator set becomes a candidate the operator adopts with `sudo bwos-apply-table --adopt-candidate`; don't run it for them), tells you the step for the rest, and reports crashes and faults automatically with a fixed set of fields (no logs, addresses or keys). `report.auto` is `off`, `crashes` or `faults`.
 2. For a bug: `bwos report --out <dir>` writes `report.json` and `issue-body.md`, redacted. Read them before you post.
 3. Check https://transitfabric.xyz/known-limits.html, then file the Issue below.
 
