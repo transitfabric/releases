@@ -1,15 +1,15 @@
-# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.2)
+# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.3)
 
 For AI agents working on behalf of a tester. Humans: start at https://transitfabric.xyz/quickstart.html. A shorter index in the llms.txt format is at https://transitfabric.xyz/llms.txt.
 
-Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.2** as it is today. The command-line tools are still named `bwos`.
+Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.3** as it is today. The command-line tools are still named `bwos`.
 
-**Not in tester.2:** `bwos doctor`, `bwos report` and an agent skill arrive with tester.3. Don't call them, and don't tell the user they exist. The bounty opens with tester.3. Reports are welcome now, filed the same way.
+**New in tester.3:** `bwos doctor --json`, `bwos report` and an agent skill. Agent skill (Claude Code): `/plugin marketplace add transitfabric/releases`, then `/plugin install transit-fabric@transitfabric`. The bounty opens soon. Reports are welcome now, filed the same way.
 
 ## Where things are
 
-- Release and downloads: https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.2. Binaries are for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `bwos-solver`, `bwos-validator`, `minimal_solver`), plus a no-root container image, router images and `install.sh`. The `bwos` CLI also ships for macOS, and the link page for any OS.
-- Checksums: the `SHA256SUMS` asset on the release. `MANIFEST.json` has the commit and the file list.
+- Release and downloads: https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.3. Binaries are for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `bwos-solver`, `bwos-validator`, `minimal_solver`), plus a no-root container image, router images and `install.sh`. The `bwos` CLI also ships for macOS, and the link page for any OS.
+- Checksums: the `SHA256SUMS` asset on the release. `MANIFEST.json` has the commit and the file list. `latest.json` (a release asset) lists the version, every asset's sha256 and url, the hash of `SHA256SUMS` and the validator set's `validator_set_not_after_block`. It comes from the same place as the files, so it does not replace comparing `SHA256SUMS` with the announced hash.
 - Quick start: https://transitfabric.xyz/quickstart.html. Also the `QUICKSTART.md` and `testers.md` assets. Read the quick start before you act.
 - Known limits: https://transitfabric.xyz/known-limits.html.
 - Red-team pack: https://transitfabric.xyz/redteam/index.html.
@@ -28,11 +28,15 @@ Transit Fabric is a Bittensor subnet for a decentralized network fabric, running
 - Registering for bounty credit also needs the human's wallet: https://transitfabric.xyz/claim.html. Don't do it for them.
 - Testnet TAO comes from the Bittensor community Discord. Don't try to buy or move real TAO.
 
-## Reporting a bug
+## Checking a node and reporting a bug
+
+1. `bwos doctor --json` (add `--kind noroot|container --state-dir <dir>`; the default is a kernel node). It only reads files. Exit code 0 means every check passed; each failing check has a registry `code` and a `fix`. The codes are listed in the skill. System One fixes some itself (`inputs_apply_lock_stuck`; `validator_set_stale` in a container), prepares others for the human (on a kernel node a stale validator set becomes a candidate the operator adopts with `sudo bwos-apply-table --adopt-candidate`; don't run it for them), tells you the step for the rest, and reports crashes and faults automatically with a fixed set of fields (no logs, addresses or keys). `report.auto` is `off`, `crashes` or `faults`.
+2. For a bug: `bwos report --out <dir>` writes `report.json` and `issue-body.md`, redacted. Read them before you post.
+3. Check https://transitfabric.xyz/known-limits.html, then file the Issue below.
 
 Use an Issue: https://github.com/transitfabric/releases/issues/new/choose.
 
-- Ordinary bug: the "Bug report" form. Give `bwos-node --version`, the node type and OS, steps, expected and actual, and logs with keys, seed phrases, IP addresses and hostnames removed.
+- Ordinary bug: the "Bug report" form. Give `bwos-node --version`, the node kind, the `bwos doctor --json` output, the `bwos report` Issue body, and the node type and OS. Logs have keys, seed phrases, IP addresses and hostnames removed. **Tick "Filed by an agent"** if you wrote it: it adds the `agent-filed` label.
 - A bug with a reproduction, or an incentive problem you can show: the "Finding" form (labels `finding`). **Tick "Filed by an agent"**, which adds the `agent-filed` label.
 - With the GitHub CLI you can't fill an Issue form. Write the body from the finding template, start the title with `Finding: `, and put the line `- [x] Filed by an agent` in the body: `gh issue create --repo transitfabric/releases --title 'Finding: ...' --body-file finding.md`. A workflow then adds the `finding` and `agent-filed` labels.
 - Check https://transitfabric.xyz/known-limits.html first; known issues are closed as duplicates.

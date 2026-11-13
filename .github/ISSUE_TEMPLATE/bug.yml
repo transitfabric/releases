@@ -8,6 +8,7 @@ body:
       value: |
         Security findings and exploits: do not file them here. Use "Report a vulnerability" on the Security tab.
         Read the known limits first: https://transitfabric.xyz/known-limits.html
+        Run `bwos doctor --json` and `bwos report --out <dir>` on the node first (tester.3 and later). `bwos report` redacts addresses and keys, but read it before you paste it. Never include a private key, seed phrase or wallet file.
   - type: input
     id: version
     attributes:
@@ -15,10 +16,23 @@ body:
       description: Output of `bwos-node --version`, or the release tag.
     validations:
       required: true
+  - type: dropdown
+    id: node_kind
+    attributes:
+      label: Node kind
+      description: What `bwos doctor --kind` calls it. Pick "Other" for a solver, the link page, or no node.
+      options:
+        - Kernel node (path A)
+        - No-root node (process)
+        - Container node
+        - Router (not measured in this release)
+        - Other
+    validations:
+      required: true
   - type: input
     id: os_node
     attributes:
-      label: OS and node type
+      label: OS and setup
       description: For example "Ubuntu 24.04, kernel node (path A)" or "Debian 12, no-root node in Docker, behind NAT (path B)".
     validations:
       required: true
@@ -27,17 +41,32 @@ body:
     attributes:
       label: Steps to reproduce
     validations:
-      required: true
+      required: false
   - type: textarea
     id: expected
     attributes:
       label: What you expected
     validations:
-      required: true
+      required: false
   - type: textarea
     id: actual
     attributes:
       label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: bwos doctor --json output
+      description: Paste the output of `bwos doctor --json` (add `--kind` and `--state-dir` for a no-root or container node). If it can't run, write "none" and why.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: bwos report Issue body
+      description: Paste the contents of `issue-body.md` from `bwos report --out <dir>`, after you have read it and removed anything private. If it can't run, write "none" and why.
     validations:
       required: true
   - type: textarea
@@ -48,3 +77,11 @@ body:
       render: text
     validations:
       required: false
+  - type: checkboxes
+    id: agent
+    attributes:
+      label: Filed by an agent
+      description: Tick this if an AI agent wrote this report. It adds the `agent-filed` label.
+      options:
+        - label: Filed by an agent
+          required: false

@@ -1,24 +1,24 @@
-# Transit Fabric testnet (tester v0.1.0-tester.2)
+# Transit Fabric testnet (tester v0.1.0-tester.3)
 
-> Transit Fabric is a decentralized network fabric run as a Bittensor subnet. It is on Bittensor testnet, subnet 611, and the current release is v0.1.0-tester.2 (a pre-release). Nodes carry overlay traffic for each other, route solvers compete on the route table, and validators measure both and set weights. Testnet only: never use mainnet keys or real TAO. Linking a node to a hotkey needs the human to sign: stop and hand off. Verify checksums before running anything you download.
+> Transit Fabric is a decentralized network fabric run as a Bittensor subnet. It is on Bittensor testnet, subnet 611, and the current release is v0.1.0-tester.3 (a pre-release). Nodes carry overlay traffic for each other, route solvers compete on the route table, and validators measure both and set weights. Testnet only: never use mainnet keys or real TAO. Linking a node to a hotkey needs the human to sign: stop and hand off. Verify checksums before running anything you download.
 
-The command-line tools are still named `bwos` in this testnet. `bwos doctor` (structured bug reports) and an agent skill arrive with tester.3. They are not in tester.2, so don't look for them. The bug bounty opens with tester.3 as well; reports are welcome now.
+The command-line tools are still named `bwos` in this testnet. tester.3 adds `bwos doctor --json` (health checks with registry codes), `bwos report` (a redacted Issue body) and an agent skill. Agent skill (Claude Code): `/plugin marketplace add transitfabric/releases`, then `/plugin install transit-fabric@transitfabric`. The bug bounty opens soon; reports are welcome now.
 
 Full rules for agents: https://transitfabric.xyz/AGENTS.md
 
 ## Downloads and checks
 
-- [Release v0.1.0-tester.2](https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.2): binaries for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `bwos-solver`, `bwos-validator`, `minimal_solver`), the no-root container image, router images, the link page, `install.sh`.
-- [SHA256SUMS](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.2/SHA256SUMS): checksum every file you download against this, and compare the hash of SHA256SUMS itself with the one in the announcement. Releases are not signed yet.
-- [MANIFEST.json](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.2/MANIFEST.json): the commit, the toolchain and the file list.
+- [Release v0.1.0-tester.3](https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.3): binaries for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `bwos-solver`, `bwos-validator`, `minimal_solver`), the no-root container image, router images, the link page, `install.sh`.
+- [SHA256SUMS](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.3/SHA256SUMS): checksum every file you download against this, and compare the hash of SHA256SUMS itself with the one in the announcement. Releases are not signed yet.
+- [MANIFEST.json](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.3/MANIFEST.json): the commit, the toolchain and the file list.
 - [All releases](https://github.com/transitfabric/releases/releases)
 
 ## Quick start
 
 - [Quick start](https://transitfabric.xyz/quickstart.html): wallet, download, node, peer, check. Start here.
-- [QUICKSTART.md](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.2/QUICKSTART.md): the same, as a release asset.
-- [testers.md](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.2/testers.md): the full tester guide.
-- [run-a-node.md](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.2/run-a-node.md) and [run-a-solver.md](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.2/run-a-solver.md)
+- [QUICKSTART.md](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.3/QUICKSTART.md): the same, as a release asset.
+- [testers.md](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.3/testers.md): the full tester guide.
+- [run-a-node.md](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.3/run-a-node.md) and [run-a-solver.md](https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.3/run-a-solver.md)
 - [Known limits](https://transitfabric.xyz/known-limits.html): read before reporting a bug.
 
 ## Rules for agents
@@ -27,7 +27,7 @@ Full rules for agents: https://transitfabric.xyz/AGENTS.md
 
 ## Reporting
 
-- [Bug report or Finding (Issues)](https://github.com/transitfabric/releases/issues/new/choose): ordinary bugs, and findings with a reproduction. Tick "Filed by an agent" on the Finding form.
+- [Bug report or Finding (Issues)](https://github.com/transitfabric/releases/issues/new/choose): ordinary bugs, and findings with a reproduction. The Bug report form asks for the version, node kind, `bwos doctor --json` output and the `bwos report` Issue body. Tick "Filed by an agent" on either form (label `agent-filed`).
 - [Private advisory](https://github.com/transitfabric/releases/security/advisories/new): security findings and exploits. Agents use the API: `POST /repos/transitfabric/releases/security-advisories/reports` (GitHub private vulnerability reporting, enabled on this repository), with `summary` and `description`, and optionally `severity`.
 - [Finding template](https://transitfabric.xyz/redteam/FINDING.md): front matter and sections. Use it as the Issue body or the advisory description.
 - [SECURITY.md](https://github.com/transitfabric/releases/blob/main/SECURITY.md)
