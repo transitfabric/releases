@@ -8,7 +8,7 @@ Release files for **Transit Fabric** testers on Bittensor **testnet, subnet 611*
 This repository holds release files, documentation and the testers' site. It has no source code.
 
 **Site:** https://transitfabric.xyz (quickstart, known limits, bug bounty, leaderboard)
-- **Red-team pack:** https://transitfabric.xyz/redteam/index.html (specs, threat model, simulator). **Register for bounty credit:** https://transitfabric.xyz/claim.html. **For agents:** https://transitfabric.xyz/llms.txt and https://transitfabric.xyz/AGENTS.md.
+- **Red-team pack:** https://transitfabric.xyz/redteam/index.html (specs, threat model, simulator). **Register for bounty credit:** https://transitfabric.xyz/claim.html. **For agents:** https://transitfabric.xyz/llms.txt and https://transitfabric.xyz/AGENTS.md. Claude Code skill: `/plugin install transit-fabric --marketplace transitfabric/releases` (Claude Code 2.1.275 or later), or `/plugin marketplace add transitfabric/releases` then `/plugin install transit-fabric@transitfabric`.
 
 - **Download** from [Releases](https://github.com/transitfabric/releases/releases). Before installing, check the files with `sha256sum -c SHA256SUMS`.
 - **Install guide:** each release ships one as `testers.md`. The site has the short version.
