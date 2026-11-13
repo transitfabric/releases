@@ -1,5 +1,7 @@
 # Transit Fabric testnet bug bounty and Founding Tester program
 
+> **Opening soon.** The program opens with v0.1.0-tester.3, which adds structured bug reports (`bwos doctor`, `bwos report`) and a red-team pack (the scoring, measurement and threat-model specs, plus the simulator). Points start counting on the opening date, which we'll announce here and in the Transit Fabric Discord. Bug and security reports are welcome now. Please send them the same way.
+
 Transit Fabric is a Bittensor subnet for a decentralized network fabric. It is testing on Bittensor **testnet, subnet 611**. We reward early testers who find bugs and exploits in the released software and the testnet network, and who keep nodes and solvers running.
 
 ## Scope

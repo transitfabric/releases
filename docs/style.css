@@ -22,3 +22,5 @@ table{border-collapse:collapse;width:100%}
 th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
 th{background:var(--card)}
 footer{padding-bottom:32px;color:var(--muted);font-size:.9rem}
+
+.notice{border-left:4px solid currentColor;padding:.6em 1em;margin:1em 0;}
