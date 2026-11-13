@@ -4,13 +4,13 @@
 <header><a class="brand" href="../index.html">Transit Fabric releases</a>
 <nav><a href="../index.html">Home</a><a href="../quickstart.html">Quick start</a><a href="../known-limits.html">Known limits</a><a href="../bounty.html">Bounty</a><a href="../redteam/index.html">Red team</a><a href="../claim.html">Claim credit</a><a href="../leaderboard.html">Leaderboard</a></nav></header>
 <main>
-<p class="notice">Taken from the Transit Fabric source repository at commit <code>5a67e29</code> (<code>5a67e292db0a6b5732ff1c45554c79f81198cf2a</code>, main), file <code>docs/whitepaper.md</code>. Links into the private source tree are shown as plain text.</p>
+<p class="notice">Taken from the Transit Fabric source repository at commit <code>940dc25</code> (<code>940dc2529d04c2b2c116bfa27ba738cf7868f718</code>, main), file <code>docs/whitepaper.md</code>. Links into the private source tree are shown as plain text.</p>
 <h1
 id="transit-fabric-a-cryptographically-verifiable-fc008-ebgp-transit-fabric-and-multi-commodity-routing-market-on-bittensor">Transit
 Fabric: A Cryptographically Verifiable <code>fc00::/8</code> eBGP
 Transit Fabric and Multi-Commodity Routing Market on Bittensor</h1>
-<p><strong>Version:</strong> 1.2 (2026-11-13). Replaces 1.1
-(2026-11-07).</p>
+<p><strong>Version:</strong> 1.3 (2026-11-13). Replaces 1.2, published
+earlier the same day.</p>
 <p><strong>Status labels.</strong> Every feature in this paper carries
 one of three labels:</p>
 <ul>
@@ -26,6 +26,36 @@ still <em>proposed</em> says so.</li>
 <p>Launch is transit (Mechanism 0) and route solving (Mechanism 1) only.
 Transit Fabric is not yet registered on mainnet, so nothing described
 here runs there.</p>
+<h2 id="what-changed-in-version-13">What changed in version 1.3</h2>
+<p>These changes follow the founder's answers to the 1.2 review on
+2026-11-13.</p>
+<ol type="1">
+<li><strong>Economics rewritten to the current model</strong> (§6;
+ADR-0053, ADR-0063, ADR-0064, ADR-0065). Removed: the 1.1 model's 80/20
+company buyback, the company's 20% fee on protocol revenue, the
+<code>ALPHA</code> step-down tied to it, the subsidy ratios, and the
+three-year revenue, market-cap and company-income projections. §6 now
+says who pays whom, in what unit and what is burned, with ADR-0063's
+rate-card and clearing formulas, ADR-0065's TAO/USD conversion and a
+worked example, and the burn guards' values from the OQ-291 calibration.
+No new projection replaces the old ones.</li>
+<li><strong>How BandwidthOS earns</strong> (§6.3, §7). A reseller's
+margin, never protocol revenue. The protocol holds no money and charges
+no fee.</li>
+<li><strong>BandwidthOS may run nodes, as a reference
+deployment</strong> (founder, 2026-11-13; ADR-0064 §8; §7.2).
+Open-source code and a public example for others to copy, with no
+protocol privilege and no special role. The hub-node projection and
+every "anchor" role are removed. How these nodes' emissions sit with the
+company's treasury rule is open (OQ-301).</li>
+<li><strong>Go-to-market sequences</strong> (§7.4). The contract figures
+stay. The 1.1 buyback figure and the capacity-pay projection in Sequence
+1 are removed; the BFD failover change in §7.1 stays.</li>
+<li><strong>Change notes, abstract and §4.1</strong> brought in line:
+1.1 item 7 and 1.2 items 3 and 5 point to the new §6 and §7.2, and
+§4.1's step 5 no longer describes the <code>ALPHA</code> step-down as
+current. The company form is still not decided (Inc. or LLC).</li>
+</ol>
 <h2 id="what-changed-in-version-12">What changed in version 1.2</h2>
 <p>These decisions were made between 2026-11-08 and 2026-11-13 and are
 reflected in the sections below. Where a section still describes an
@@ -47,17 +77,17 @@ scoring input. <code>bwos doctor</code>, <code>bwos report</code> and an
 agent skill share one symptom registry. The model, the skill library and
 routers come later. This narrows 1.1 item 6.</li>
 <li><strong>The buyer burns; nobody holds the money</strong> (ADR-0063,
-proposed, revision 5; the founder chose burn on 2026-11-11; §6.1, §7.3).
+proposed, revision 5; the founder chose burn on 2026-11-11; §6.2, §7.3).
 A reseller buys wholesale capacity by calling
 <code>add_stake_burn</code>, which buys the subnet's alpha from the pool
 and destroys it in the same call, signed by the buyer's own coldkey.
 There is no protocol treasury and no custodian. This replaces 1.1 item
-2's "the company converts it to TAO and buys alpha" and the 80/20
-buyback of §6. Details pending red team and simulation; not built
-(PB-49).</li>
+2's "the company converts it to TAO and buys alpha" and the 1.1 80/20
+buyback; 1.3 removes the projections built on it (§6). Details pending
+red team and simulation; not built (PB-49).</li>
 <li><strong>Wholesale is quoted in US dollars and settled by burning
 TAO</strong> (ADR-0065, accepted in principle on 2026-11-12, details
-proposed pending a red team; §6.1, §7.3). Each window's rate card
+proposed pending a red team; §6.2, §7.3). Each window's rate card
 carries one TAO/USD reference read from the chain at a fixed block.
 Bittensor's Gamma credits are a later option, not part of v0.</li>
 <li><strong>BandwidthOS is the "model home"</strong> (ADR-0064; §7).
@@ -66,12 +96,13 @@ and first gateway. Everything it runs is open source, it has no protocol
 privilege, and it pays the same clearing price as any reseller. Its own
 alpha comes only from retail margin and sits on hotkeys that never set
 weights. This replaces 1.1 item 7's framing and §7.2's company-owned
-anchor routers with special roles.</li>
+anchor routers with special roles. <em>(1.3: BandwidthOS may run nodes
+only as a reference deployment, §7.2.)</em></li>
 <li><strong>The name is Transit Fabric</strong> (ADR-0062, ADR-0066;
 title and throughout). Transit Fabric is the open protocol and network;
 BandwidthOS is only the company. Code keeps the <code>bwos</code> names
-until a trademark search before mainnet. The old name PIPE is retired
-everywhere.</li>
+until a trademark search before mainnet. The project's old name is
+retired everywhere.</li>
 <li><strong>Inline node bindings</strong> (ADR-0058; §2.1). Live. A
 hotkey binds up to 7 nodes inside its own on-chain commitment, with no
 server to publish from.</li>
@@ -108,7 +139,8 @@ longer claims node links resist DPI (ADR-0040).</li>
 sections below. Where a section still describes the older design, it
 says so. Version 1.2 revises some of them: item 2 by 1.2 items 3 and 4,
 item 3 by item 11 (proposed), item 4 by items 3 and 5, item 6 by item 2,
-and item 7 by item 5.</p>
+and item 7 by item 5. Version 1.3 removes the projections built on item
+2's buyback (§6).</p>
 <ol type="1">
 <li><strong>Unearned weight goes to a disclosed first-party UID, not a
 burn or recycle UID</strong> (§4.2; <code>scoring.md</code> §Unearned
@@ -155,7 +187,8 @@ software. Ordinary transit nodes still never egress.</li>
 library learned from the fleet</strong> (ADR-0047, ADR-0048,
 ADR-0050).</li>
 <li><strong>The operating company is BandwidthOS</strong> (Inc. or LLC,
-not yet decided).</li>
+not yet decided). <em>(1.3: it earns a reseller's margin, never protocol
+revenue, §6.3.)</em></li>
 </ol>
 <p><strong>Code:</strong> a Rust workspace (<code>bwos-core</code>,
 <code>bwos-net</code>, <code>bwos-node</code>, <code>bwos-solver</code>,
@@ -213,12 +246,14 @@ validator-allocated canary stream checked at every hop
 (<code>ADR-0051</code>). Customer traffic is checked, never credited
 (<code>ADR-0053</code>), so wash-trading earns nothing, while forwarding
 stays at kernel line rate. Customer money reaches the subnet by a burn
-the buyer makes itself: a reseller buys capacity by burning TAO into the
-subnet's pool, so no treasury or company holds it
-(<code>ADR-0063</code>, <code>ADR-0065</code>, proposed). We validate
-the protocol through a 50-window adversarial game-theoretic simulator,
-live transatlantic multi-region deployments across North America and
-Europe, and a public test network on Bittensor testnet, subnet 611.</p>
+the buyer makes itself: a reseller buys wholesale capacity, quoted in US
+dollars, by burning TAO into the subnet's pool, so no treasury or
+company holds it and the protocol charges no fee (<code>ADR-0063</code>,
+proposed; <code>ADR-0065</code>). BandwidthOS, the first reseller, earns
+only its retail margin (<code>ADR-0064</code>). We validate the protocol
+through a 50-window adversarial game-theoretic simulator, live
+transatlantic multi-region deployments across North America and Europe,
+and a public test network on Bittensor testnet, subnet 611.</p>
 <hr />
 <h2 id="1-introduction--motivation">1. Introduction &amp;
 Motivation</h2>
@@ -940,14 +975,16 @@ redistributed pro rata across uncapped UIDs.</p></li>
 <li><p><strong>Blended Mechanism 0 Share
 (<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mtext mathvariant="normal">share</mtext><mi>u</mi></msub><annotation encoding="application/x-tex">\text{share}_u</annotation></semantics></math></span>):</strong>
 <div class="tw"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mtext mathvariant="normal">share</mtext><mi>u</mi></msub><mo>=</mo><mrow><mo stretchy="true" form="prefix">⌊</mo><mfrac><mrow><mtext mathvariant="normal">ALPHA</mtext><mo>⋅</mo><msub><mtext mathvariant="normal">cap</mtext><mi>u</mi></msub></mrow><mrow><munder><mo>∑</mo><mi>j</mi></munder><msub><mtext mathvariant="normal">cap</mtext><mi>j</mi></msub></mrow></mfrac><mo stretchy="true" form="postfix">⌋</mo></mrow><mo>+</mo><mrow><mo stretchy="true" form="prefix">⌊</mo><mfrac><mrow><mo stretchy="false" form="prefix">(</mo><msup><mn>10</mn><mn>6</mn></msup><mo>−</mo><mtext mathvariant="normal">ALPHA</mtext><mo stretchy="false" form="postfix">)</mo><mo>⋅</mo><msub><mover><mtext mathvariant="normal">use</mtext><mo accent="true">̂</mo></mover><mi>u</mi></msub></mrow><mrow><munder><mo>∑</mo><mi>j</mi></munder><msub><mover><mtext mathvariant="normal">use</mtext><mo accent="true">̂</mo></mover><mi>j</mi></msub></mrow></mfrac><mo stretchy="true" form="postfix">⌋</mo></mrow></mrow><annotation encoding="application/x-tex">\text{share}_u = \left\lfloor \frac{\text{ALPHA} \cdot \text{cap}_u}{\sum_j \text{cap}_j} \right\rfloor + \left\lfloor \frac{(10^6 - \text{ALPHA}) \cdot \widehat{\text{use}}_u}{\sum_j \widehat{\text{use}}_j} \right\rfloor</annotation></semantics></math></div>
-At network bootstrap,
+In 1.0,
 <span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">ALPHA</mtext><mo>=</mo><mn>700</mn><mo>,</mo><mn>000</mn><mrow><mspace width="0.333em"></mspace><mtext mathvariant="normal"> ppm</mtext></mrow></mrow><annotation encoding="application/x-tex">\text{ALPHA} = 700{,}000\text{ ppm}</annotation></semantics></math></span>
 (<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>70</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">70\%</annotation></semantics></math></span>
 bonded capacity,
 <span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>30</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">30\%</annotation></semantics></math></span>
-verified traffic usage) to guarantee reliable baseline capacity for
-launch partners, stepping down via governance as paid traffic volume
-scales.</p></li>
+verified traffic usage). Since 1.1 the capacity weight is
+<code>W</code>, which is
+<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mn>6</mn></msup><annotation encoding="application/x-tex">10^6</annotation></semantics></math></span>
+(capacity only) until PB-38's canary-carriage term lands, and the
+step-down tied to paid traffic is retired (ADR-0053, PB-40).</p></li>
 </ol>
 <hr />
 <h3
@@ -1197,42 +1234,135 @@ commercial: they authorize traffic at an exit or gateway and never enter
 scoring.</li>
 </ul>
 <hr />
-<h2 id="6-tokenomics-buyer-side-burn--3-year-financial-projections">6.
-Tokenomics, Buyer-Side Burn &amp; 3-Year Financial Projections</h2>
+<h2 id="6-tokenomics-emissions-wholesale-and-the-buyer-side-burn">6.
+Tokenomics: Emissions, Wholesale and the Buyer-Side Burn</h2>
 <blockquote>
-<p><strong>Version 1.2 note.</strong> Version 1.1 had the company take
-customer revenue, convert it to TAO and buy alpha (an 80/20 buyback).
-That is replaced by a burn the buyer makes itself (ADR-0063; the founder
-chose burn on 2026-11-11), with prices quoted in US dollars and settled
-in TAO (ADR-0065, accepted in principle). ADR-0063 is proposed (revision
-5) and ADR-0065's details are proposed; both await a red team and
-PB-49's simulations, and none of it is built. <strong>The projections in
-§6.2 and §6.3 were built on the 1.1 buyback model; their numbers are
-unchanged and under review.</strong></p>
+<p><strong>Version 1.3 note (founder, 2026-11-13).</strong> This section
+is rewritten to the current model. Removed: the 1.1 model's 80/20
+company buyback, the company's 20% fee on protocol revenue, the
+<code>ALPHA</code> step-down tied to the buyback, the subsidy ratios,
+and the three-year revenue, market-cap and company-income projections
+(1.2's §6.2 and §6.3). Their premises are retired (ADR-0053, ADR-0063,
+ADR-0064, ADR-0065), and the current model has no projection to replace
+them. In their place, this section says who pays whom, in what unit, and
+what is burned.</p>
+<p><strong>Status.</strong> Emissions-only pay is accepted (ADR-0053)
+and live on testnet 611 as capacity pay (§4.1). The buyer-side burn is
+the decided direction: the founder approved ADR-0063's direction and
+chose burn over recycle on 2026-11-11 (OQ-288). ADR-0063 itself is still
+<em>proposed</em> (revision 5), pending its red team and PB-49's
+simulations. US-dollar quoting (ADR-0065) is accepted in principle, with
+its details proposed. None of the wholesale path is built (PB-49).</p>
 </blockquote>
+<h3 id="61-two-flows-that-never-meet-adr-0053">6.1 Two flows that never
+meet (ADR-0053)</h3>
+<p>Transit Fabric keeps protocol pay and customer money in two separate
+flows. Nothing from the second ever enters the first as a scoring
+input.</p>
+<ol type="1">
+<li><strong>The emissions flow (live on testnet).</strong> Nodes,
+gateways, solvers and validators are paid only in the subnet's alpha
+emissions, allocated by what validators measure themselves: capacity and
+uptime today, canary carriage once PB-38 scores it (Mechanism 0), and
+routing quality (Mechanism 1). No node is paid for carrying traffic
+directly. The economic model's inputs
+(<code>docs/economics/README.md</code>, as of 2026-10-17) are
+Bittensor's <code>3,600 TAO/day</code> of network emissions and the
+per-subnet split of <strong>41% to miners</strong> (here, nodes and
+solvers), <strong>41% to validators</strong> and <strong>18% to the
+subnet owner</strong>.</li>
+<li><strong>The commercial flow (designed, ADR-0063 proposed).</strong>
+Customers pay resellers. Resellers buy wholesale capacity by burning
+TAO, and pay gateways a port fee. Payments, vouchers, credits, client
+receipts and the rate card are <strong>never a scoring input</strong>,
+so faking, buying or steering "paid" traffic earns nothing, and
+mishandling customer traffic can only lower a score (ADR-0053 §2).</li>
+</ol>
+<p><strong>How customer money reaches nodes and solvers: through the
+pool, never through receipts</strong> (ADR-0053 §4, ADR-0063). A
+wholesale purchase buys the subnet's alpha from its pool with TAO and
+destroys it. Each purchase puts TAO into the pool and removes the alpha
+it bought. A subnet's share of network emissions depends on its pool:
+the economic model takes it as set by the alpha price, and ADR-0065
+counts a burn as TAO flow into the pool for the emission share. Either
+way, more customers make every participant's emissions worth more.
+Nobody, the company included, can move any participant's slice:
+allocation within the subnet is set only by measurement (ADR-0049,
+ADR-0053). One caution from ADR-0063 (OQ-288):
+<code>SubnetAlphaOut</code> doesn't drop on a burn, so a supply figure
+derived from it overstates circulating alpha.</p>
 <h3
-id="61-how-customer-money-reaches-the-subnet-the-buyer-burns-adr-0063-adr-0065">6.1
-How customer money reaches the subnet: the buyer burns (ADR-0063,
+id="62-who-pays-whom-in-what-unit-and-what-is-burned-adr-0063-adr-0065">6.2
+Who pays whom, in what unit, and what is burned (ADR-0063,
 ADR-0065)</h3>
-<p>Under Bittensor's Dynamic TAO (dTAO) emission model, each subnet's
-share of daily network emissions (<code>3,600 TAO/day</code>, or
-<code>~$366.6M/year</code> at <code>$279/TAO</code>) is determined by
-the Exponential Moving Average (EMA) price of its subnet token
-(<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>).
-Within the subnet, emissions are distributed <strong><code>41%</code> to
-Miners</strong> (Mechanism 0 transit operators and Mechanism 1 route
-solvers), <strong><code>41%</code> to Validators</strong>, and
-<strong><code>18%</code> to the Subnet Owner</strong>.</p>
-<p>Transit Fabric couples commercial transit revenue to the
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>
-token without anyone holding the money:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th style="text-align: left;">Payer</th>
+<th style="text-align: left;">Payee</th>
+<th style="text-align: left;">For</th>
+<th style="text-align: left;">Quoted in</th>
+<th style="text-align: left;">Paid in</th>
+<th style="text-align: left;">Burned?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">End customer</td>
+<td style="text-align: left;">A reseller (BandwidthOS, a VPN, an ISP, a
+broker)</td>
+<td style="text-align: left;">The reseller's product: transit now, exits
+in a later phase</td>
+<td style="text-align: left;">The reseller's choice</td>
+<td style="text-align: left;">Any currency the reseller accepts (wire,
+card, USDC)</td>
+<td style="text-align: left;">No. The protocol never touches fiat or
+USDC</td>
+</tr>
+<tr>
+<td style="text-align: left;">Reseller</td>
+<td style="text-align: left;">Nobody: the subnet pool</td>
+<td style="text-align: left;">The <strong>fabric fee</strong>: one
+window of a lane's rate cap and byte quota</td>
+<td style="text-align: left;">Micro-US-dollars (<code>uusd</code>,
+<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mrow><mi>−</mi><mn>6</mn></mrow></msup><annotation encoding="application/x-tex">10^{-6}</annotation></semantics></math></span>
+USD) per GiB, on the validators' rate card</td>
+<td style="text-align: left;">TAO, by
+<code>SubtensorModule.add_stake_burn</code> from the reseller's own
+coldkey</td>
+<td style="text-align: left;"><strong>Yes.</strong> The TAO buys alpha
+from the pool, and that alpha is destroyed in the same call</td>
+</tr>
+<tr>
+<td style="text-align: left;">Reseller</td>
+<td style="text-align: left;">Each lane gateway's registered
+coldkey</td>
+<td style="text-align: left;">The <strong>port fee</strong>, per window,
+before the next auction</td>
+<td style="text-align: left;"><code>uusd</code> per GiB, from the
+gateway's signed registration, fixed per credit by the card</td>
+<td style="text-align: left;">TAO, by
+<code>Balances.transfer_keep_alive</code></td>
+<td style="text-align: left;">No. It is the gateway's revenue</td>
+</tr>
+<tr>
+<td style="text-align: left;">The chain's emissions</td>
+<td style="text-align: left;">Nodes, gateways, solvers, validators and
+the owner</td>
+<td style="text-align: left;">Measured work (§4)</td>
+<td style="text-align: left;">—</td>
+<td style="text-align: left;">Alpha, every 360-block tempo</td>
+<td style="text-align: left;">No</td>
+</tr>
+</tbody>
+</table></div>
 <pre class="mermaid"><code>flowchart LR
     Cust[&quot;End customers\n(any currency)&quot;]
     Res[&quot;Resellers\n(BandwidthOS, VPNs, ISPs, brokers)&quot;]
-    Card[&quot;Validator-signed rate card\n(lanes, USD prices, one TAO/USD reference)&quot;]
+    Card[&quot;Validator-signed rate card\n(lanes, uusd prices, one TAO/USD reference)&quot;]
     Burn[&quot;add_stake_burn, signed by the reseller\nTAO buys α from the pool; α destroyed&quot;]
-    Pool[&quot;Subnet pool: TAO inflow,\nα supply falls&quot;]
-    Em[&quot;Subnet emission share\n-&gt; miner and validator pay&quot;]
+    Pool[&quot;Subnet pool: TAO in,\nbought α destroyed&quot;]
+    Em[&quot;Emissions: nodes, gateways,\nsolvers, validators, owner&quot;]
     GW[&quot;Gateways\n(port fee in TAO, per window)&quot;]
 
     Cust --&gt; Res
@@ -1241,399 +1371,203 @@ token without anyone holding the money:</p>
     Res --&gt; GW
     Burn --&gt; Pool
     Pool --&gt; Em</code></pre>
-<ol type="1">
-<li><strong>Three layers, each with one job.</strong> The
-<strong>protocol</strong> publishes a rate card, reads purchases from
-the chain and publishes credits and balances; nobody operates it and it
-takes nothing but burned TAO. <strong>Resellers</strong> (anyone:
-BandwidthOS, a VPN, an ISP, a broker) sell to end customers in any
-currency, buy TAO and make purchases. <strong>Gateways</strong>
-(registered datacenter operators, ADR-0052) on-ramp and off-ramp
-traffic, meter it and enforce credits. Currency conversion is the
-reseller's job; the protocol never touches fiat or USDC.</li>
-<li><strong>The buyer does the buyback.</strong> A purchase is one
-transaction from the reseller's own coldkey:
-<code>SubtensorModule.add_stake_burn</code>, which buys the subnet's
-alpha from the pool with TAO and burns it in the same call, plus a
-remark naming the credit. Nothing is left to hold, so there is
-<strong>no treasury and no custodian</strong>, and protocol revenue
-never passes through the company. A burn is final: nothing is refunded
-for unused bytes, a lapse or deregistration. A testnet check on subnet
-611 (2026-11-11) confirmed that a coldkey which is not the subnet owner
-can make this call.</li>
-<li><strong>The rate card.</strong> Each window, validators publish a
-signed rate card. A lane is an ordered pair of gateways run by different
-operators; its sellable headroom comes from verified capacity, and its
-price per GiB rises as the lane fills. Purchases in a window clear as
-one uniform-price batch auction. The card, credits and payments are
-<strong>never a scoring input</strong> (ADR-0053).</li>
-<li><strong>Quoted in dollars, settled in TAO (ADR-0065).</strong>
-Prices, bids, balances and port fees are in micro-US-dollars. The card
-for each window carries one TAO/USD reference, read from the chain's
-<code>TaoUsdPrice</code> at a fixed finalized block, so every validator
-converts the same way. Resellers carry TAO/USD risk only between buying
-TAO and burning it. Bittensor's Gamma credits are a later option,
-adopted only by a new ADR.</li>
-<li><strong>Guards for alpha holders.</strong> Every burn faces price
-guards: a reference price over about 7 days, a volatility gate, a
-slippage cap and a per-extrinsic impact cap, so a purchase can't be
-timed against a spike. Every burn appears in a public burn ledger, and
-economic parameters change only with about 30 days' notice.</li>
-<li><strong>Gateways are paid directly.</strong> Each window's port fee
-goes from the reseller to each lane gateway's registered coldkey, in
-TAO, before the next auction. No gateway holds money for service it
-hasn't delivered.</li>
-<li><strong>Nodes are still paid only in emissions.</strong> Customer
-money reaches nodes and solvers through the subnet's pool and emission
-share, never through receipts or vouchers (ADR-0053).</li>
-</ol>
-<h4
-id="projection-assumptions-from-the-11-model-under-review">Projection
-assumptions from the 1.1 model (under review)</h4>
-<p>The items below are the 1.1 text, kept with its numbers because the
-§6.2 and §6.3 projections rest on them. The 80/20 split in item 1 is
-replaced by the burn above, and the <code>ALPHA</code> step-down in item
-2 was retired by ADR-0053 (Mechanism 0 pays on capacity until canary
-carriage is scored). The founder is reviewing these assumptions.</p>
-<ol type="1">
-<li><strong>80% Programmatic
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>
-Buyback / 20% Protocol Fee:</strong> Customers (VPN partners,
-enterprises linking multi-cloud clusters, and telemetry buyers) pay in
-stablecoins, fiat, or
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>.
-<strong><code>80%</code> of gross external revenue</strong> is used
-programmatically to buy back
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>
-from the subnet liquidity pool, while <strong><code>20%</code></strong>
-is retained by the operating company to fund core engineering, hardware
-appliance certification, and business development.</li>
-<li><strong>Bootstrap-to-Usage Transition
-(<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>
-Parameter Step-Down):</strong>
-<ul>
-<li>In <strong>Year 1</strong>, Mechanism 0 sets
-<code>ALPHA = 700,000</code> ppm
-(<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>70</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">70\%</annotation></semantics></math></span>
-capacity /
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>30</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">30\%</annotation></semantics></math></span>
-usage). At <code>100 Gbps</code> bonded capacity in the Base case,
-emissions pay operators
-<strong><code>$0.53 / Mbps / month</code></strong>—<strong><code>3.51x</code>
-the benchmark <code>$0.15 / Mbps / month</code> hub transit
-rate</strong>—creating a powerful supply-side magnet for datacenter
-operators with idle 95th-percentile headroom.</li>
-<li>In <strong>Years 2 and 3</strong>, as commercial traffic scales,
-<code>ALPHA</code> steps down (<code>70% -&gt; 50% -&gt; 40%</code> in
-Base; <code>60% -&gt; 40% -&gt; 30%</code> in Bull), shifting miner
-rewards from passive capacity standby to active, receipt-verified paid
-throughput.</li>
-</ul></li>
-<li><strong>Compressing the Emission Subsidy Ratio:</strong> Across the
-broader Bittensor network, subnets typically require
-<code>$22–$40</code> of token emissions per <code>$1</code> of external
-customer revenue. Because bandwidth transit is an existing
-multi-billion-dollar institutional market, Transit Fabric compresses its
-<strong>Subsidy Ratio (Annual Emissions
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>÷</mi><annotation encoding="application/x-tex">\div</annotation></semantics></math></span>
-Annual Customer Revenue)</strong> from <code>7.01x</code> in Year 1 to
-<strong><code>1.17x</code> in Year 3 (Base)</strong> and
-<strong><code>0.69x</code> in Year 3 (Bull)</strong>—where external
-customer revenue exceeds total network emissions paid to the
-subnet.</li>
-</ol>
-<h3 id="62-four-commercial-revenue-streams-bear--base--bull-model">6.2
-Four Commercial Revenue Streams (<code>Bear / Base / Bull</code>
-Model)</h3>
-<blockquote>
-<p><strong>Note:</strong> this table predates ADR-0063 and ADR-0065 and
-is under review. Its "Annual Programmatic α Buyback (80%)" row assumes
-the retired buyback, and streams 1 and 3 depend on VPN exits, a later
-phase.</p>
-</blockquote>
-<p>The economic model
-(<code>docs/economics/PIPE_subnet_economic_model.xlsx</code>, a file
-named before the rename; benchmarked at <code>TAO = $279</code>,
-<code>884 TAO</code> registration cost = <code>$246,636</code>) projects
-four distinct revenue lines over Years 1–3:</p>
+<p><strong>Three layers, each with one job</strong> (ADR-0063 §1). The
+<strong>protocol</strong> publishes the rate card, reads purchases from
+the chain and publishes credits, balances and a burn ledger; nobody
+operates it and it takes nothing but burned TAO.
+<strong>Resellers</strong> sell to end customers, buy TAO, make
+purchases and issue <code>BandwidthVouchers</code>.
+<strong>Gateways</strong> (registered datacenter operators, ADR-0052)
+on-ramp and off-ramp traffic, meter it at both ends of a lane and
+enforce credits. Currency conversion is the reseller's job. There is
+<strong>no treasury, no custodian and no protocol fee</strong>: at the
+protocol level no one receives revenue except gateways, which receive
+their own port fees.</p>
+<p><strong>The rate card</strong> (ADR-0063 §2, amended by ADR-0065 §4).
+Each window, validators publish a signed card. A lane is an ordered pair
+of gateways run by different operators. v0 sells one class,
+<code>best_effort</code>: a byte quota plus a rate cap. For each
+lane:</p>
+<p><div class="tw"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">headroom</mtext><mo>=</mo><mrow><mi mathvariant="normal">min</mi><mo>&#8289;</mo></mrow><mo stretchy="false" form="prefix">(</mo><mtext mathvariant="normal">min_cut</mtext><mo>,</mo><mtext mathvariant="normal">egress</mtext><mo stretchy="false" form="postfix">)</mo><mo>⋅</mo><mfrac><mtext mathvariant="monospace">𝚆𝙷𝙾𝙻𝙴𝚂𝙰𝙻𝙴_𝚂𝙴𝙻𝙻𝙰𝙱𝙻𝙴_𝙿𝙿𝙼</mtext><msup><mn>10</mn><mn>6</mn></msup></mfrac><mo>−</mo><mtext mathvariant="normal">sold rate</mtext></mrow><annotation encoding="application/x-tex">\text{headroom} = \min(\text{min\_cut}, \text{egress}) \cdot \frac{\texttt{WHOLESALE\_SELLABLE\_PPM}}{10^6} - \text{sold rate}</annotation></semantics></math></div></p>
+<p><div class="tw"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mtext mathvariant="normal">price</mtext><mtext mathvariant="normal">uusd/GiB</mtext></msub><mo>=</mo><mfrac><mrow><mtext mathvariant="monospace">𝚆𝙷𝙾𝙻𝙴𝚂𝙰𝙻𝙴_𝙵𝙻𝙾𝙾𝚁_𝚄𝚄𝚂𝙳_𝙿𝙴𝚁_𝙶𝙸𝙱</mtext><mo>⋅</mo><mtext mathvariant="normal">curve</mtext><mo stretchy="false" form="prefix">(</mo><mtext mathvariant="normal">utilization_ppm</mtext><mo stretchy="false" form="postfix">)</mo></mrow><msup><mn>10</mn><mn>6</mn></msup></mfrac></mrow><annotation encoding="application/x-tex">\text{price}_{\text{uusd/GiB}} = \frac{\texttt{WHOLESALE\_FLOOR\_UUSD\_PER\_GIB} \cdot \text{curve}(\text{utilization\_ppm})}{10^6}</annotation></semantics></math></div></p>
+<p>where <code>min_cut</code> is the min-cut between the two gateways
+over verified capacity, <code>egress</code> is the egress gateway's
+measured throughput, and <code>curve</code> is a published integer
+piecewise-linear function that rises as the lane fills. <strong>To be
+set:</strong> the floor and the minimum purchase are calibrated in
+<code>uusd</code> before mainnet, and the curve breakpoints and
+<code>WHOLESALE_SELLABLE_PPM</code> are PB-49 parameters. None has a
+value yet.</p>
+<p><strong>Clearing</strong> (ADR-0063 §3). Each window's bids clear
+once, as a uniform-price batch auction per lane, ranked renewals first,
+then by <code>max_price</code>, then by a hash seeded after the cutoff.
+New fills pay the higher of the curve at final utilization and the
+highest <code>max_price</code> left unfilled for lack of headroom.
+Renewals pay the higher of the curve and the new-fill price capped at
+<code>WHOLESALE_MAX_RENEWAL_STEP_PPM</code> (proposed 10%) above their
+previous price. The price-setting unfilled bid forfeits
+<code>WHOLESALE_BID_BOND_PPM</code> (proposed 5%) of its fee. A credit
+runs one window at a time, with no fixed term.</p>
+<p><strong>A burn is final</strong> (ADR-0063 §3, revision 4). Nothing
+burned is refunded for unused bytes, a lapse, deregistration or a failed
+guard. Balance, held in <code>uusd</code> and owned by the payer
+coldkey, comes only from paying above the clearing price, being outbid,
+rounding remainders and explicit top-ups, and is spent by later
+bids.</p>
+<p><strong>Conversion: quoted in dollars, settled in TAO</strong>
+(ADR-0065 §3). The card for window
+<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>v</mi><annotation encoding="application/x-tex">v</annotation></semantics></math></span>
+carries one reference, <code>tao_usd_ref</code>: the chain's
+<code>TaoUsdPrice.accepted</code> read at the window's first block, in
+units of
+<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mn>9</mn></msup><annotation encoding="application/x-tex">10^9</annotation></semantics></math></span>
+per USD. Every validator reads the same value. A burn of
+<code>rao</code> included in window
+<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>v</mi><annotation encoding="application/x-tex">v</annotation></semantics></math></span>
+is credited, rounded in the network's favour, as</p>
+<p><div class="tw"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">uusd</mtext><mo>=</mo><mrow><mo stretchy="true" form="prefix">⌊</mo><mfrac><mrow><mtext mathvariant="normal">rao</mtext><mo>⋅</mo><mtext mathvariant="monospace">𝚝𝚊𝚘_𝚞𝚜𝚍_𝚛𝚎𝚏</mtext></mrow><msup><mn>10</mn><mn>12</mn></msup></mfrac><mo stretchy="true" form="postfix">⌋</mo></mrow><mo>,</mo><mspace width="2.0em"></mspace><mtext mathvariant="normal">and a fee due in uusd costs</mtext><mspace width="1.0em"></mspace><mtext mathvariant="normal">rao</mtext><mo>=</mo><mrow><mo stretchy="true" form="prefix">⌈</mo><mfrac><mrow><mtext mathvariant="normal">uusd</mtext><mo>⋅</mo><msup><mn>10</mn><mn>12</mn></msup></mrow><mtext mathvariant="monospace">𝚝𝚊𝚘_𝚞𝚜𝚍_𝚛𝚎𝚏</mtext></mfrac><mo stretchy="true" form="postfix">⌉</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\text{uusd} = \left\lfloor \frac{\text{rao} \cdot \texttt{tao\_usd\_ref}}{10^{12}} \right\rfloor, \qquad \text{and a fee due in uusd costs} \quad \text{rao} = \left\lceil \frac{\text{uusd} \cdot 10^{12}}{\texttt{tao\_usd\_ref}} \right\rceil .</annotation></semantics></math></div></p>
+<p><em>Worked example, with ADR-0065's own reference figure:</em> at
+$211.00, <code>tao_usd_ref</code> = <code>211000000000</code>. A burn of
+1 TAO
+(<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mn>9</mn></msup><annotation encoding="application/x-tex">10^9</annotation></semantics></math></span>
+rao) is credited
+<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⌊</mo><msup><mn>10</mn><mn>9</mn></msup><mo>⋅</mo><mn>211</mn><mo>,</mo><mn>000</mn><mo>,</mo><mn>000</mn><mo>,</mo><mn>000</mn><mi>/</mi><msup><mn>10</mn><mn>12</mn></msup><mo stretchy="false" form="postfix">⌋</mo></mrow><annotation encoding="application/x-tex">\lfloor 10^9 \cdot 211{,}000{,}000{,}000 / 10^{12} \rfloor</annotation></semantics></math></span>
+= <code>211,000,000</code> uusd, which is $211.00. The credit is fixed
+at inclusion; if TAO moves afterwards, it doesn't change. Resellers
+carry TAO/USD risk only between buying TAO and burning it, at most two
+windows. If the oracle is stale for more than
+<code>WHOLESALE_ORACLE_MAX_AGE_BLOCKS</code> (300), the card is
+<em>held</em> at the last fresh reference for up to
+<code>WHOLESALE_ORACLE_HOLD_WINDOWS</code> (3) windows, then
+<em>unavailable</em>. While it is held, new purchases and top-ups aren't
+credited, but renewals and balance spends continue. Once it is
+unavailable, only balance spends clear, and renewals that need a burn
+are suspended, not lapsed. Bittensor's Gamma credits are a later option,
+adopted only by a new ADR.</p>
+<p><em>A real burn on testnet 611</em> (ADR-0063, 2026-11-11): a coldkey
+that is not the subnet owner sent one <code>batch_all</code> of
+<code>add_stake_burn</code> and a remark. It put 10,000,000 rao (0.01
+TAO) into the pool, bought and burned 77,214,706 alpha, moved spot from
+0.129362 to 0.129526 TAO per alpha, and paid a transaction fee of
+993,533 rao (about 0.001 TAO, fixed per purchase).</p>
+<p><strong>Guards for alpha holders</strong> (ADR-0063 §3a; values from
+the OQ-291 replay of 8 young mainnet subnets,
+<code>docs/economics/oq-291-guard-calibration.md</code>). The protocol
+can't stop anyone's burn; it controls what it credits, and a burn that
+fails a guard is forfeited, never refunded, so evading a guard never
+pays. New purchases and top-ups face every guard; renewals face only the
+short-horizon band, the slippage cap and the size cap, so customers
+already served can't be cut off by a multi-day trend.</p>
 <div class="tw"><table>
 <thead>
 <tr>
-<th style="text-align: left;">Revenue Stream</th>
-<th style="text-align: left;">Buyer Profile</th>
-<th style="text-align: center;">Base Case (Y1
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-Y2
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-Y3)</th>
-<th style="text-align: center;">Bull Case (Y1
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-Y2
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-Y3)</th>
+<th style="text-align: left;">Guard</th>
+<th style="text-align: left;">Parameter</th>
+<th style="text-align: left;">Value</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><strong>1. VPN Partner Backbone
-Transit</strong></td>
-<td style="text-align: left;">Crypto-accepting VPN providers
-(<code>2 -&gt; 5 -&gt; 10</code> in Base;
-<code>3 -&gt; 10 -&gt; 25</code> in Bull)</td>
-<td style="text-align: center;"><code>$192k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$720k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<strong><code>$1.80M</code></strong></td>
-<td style="text-align: center;"><code>$540k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$3.00M</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<strong><code>$12.00M</code></strong></td>
+<td style="text-align: left;">Reference price: median spot over about 7
+days, sampled at blocks chosen after each window</td>
+<td style="text-align: left;"><code>WHOLESALE_REF_WINDOWS</code> /
+<code>WHOLESALE_REF_SAMPLES_PER_WINDOW</code></td>
+<td style="text-align: left;">140 windows / 4 (proposed)</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>2. Enterprise &amp; AI Cluster
-SDN</strong></td>
-<td style="text-align: left;">Multi-site / GPU cluster transit
-(<code>2 -&gt; 10 -&gt; 30</code> in Base;
-<code>5 -&gt; 30 -&gt; 100</code> in Bull)</td>
-<td style="text-align: center;"><code>$72k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$480k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<strong><code>$1.80M</code></strong></td>
-<td style="text-align: center;"><code>$300k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$2.16M</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<strong><code>$9.60M</code></strong></td>
+<td style="text-align: left;">Price band: a purchase's
+<code>limit</code> at most this far above the reference</td>
+<td style="text-align: left;"><code>WHOLESALE_PRICE_BAND_PPM</code></td>
+<td style="text-align: left;">25% (from OQ-291; was 15%)</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>3. Pay-Per-GB Exit
-Credits</strong></td>
-<td style="text-align: left;">Prosumers &amp; power users buying
-<code>BandwidthVouchers</code> (launches Phase 2 / Y2)</td>
-<td style="text-align: center;"><code>$0</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$150k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<strong><code>$600k</code></strong></td>
-<td style="text-align: center;"><code>$0</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$750k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<strong><code>$3.00M</code></strong></td>
+<td style="text-align: left;">Volatility gate: closes new purchases when
+the p90–p10 spread over the reference exceeds it</td>
+<td style="text-align: left;"><code>WHOLESALE_MAX_VOL_PPM</code></td>
+<td style="text-align: left;">40% (from OQ-291; was 30%)</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>4. Global Link-Metric
-Telemetry</strong></td>
-<td style="text-align: left;">Latency/jitter/loss matrix sold to WAN
-monitoring &amp; trading desks</td>
-<td style="text-align: center;"><code>$50k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$200k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<strong><code>$500k</code></strong></td>
-<td style="text-align: center;"><code>$100k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$750k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<strong><code>$2.00M</code></strong></td>
+<td style="text-align: left;">Short-horizon band: execution price over
+the 50-block median</td>
+<td style="text-align: left;"><code>WHOLESALE_SHORT_BAND_PPM</code> /
+<code>WHOLESALE_SHORT_REF_BLOCKS</code></td>
+<td style="text-align: left;">5% / 50 blocks (proposed)</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Total Annual Customer
-Revenue</strong></td>
-<td style="text-align: left;"><strong>All 4 Commercial
-Lines</strong></td>
-<td style="text-align: center;"><strong><code>$314k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$1.55M</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$4.70M</code></strong></td>
-<td style="text-align: center;"><strong><code>$940k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$6.66M</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$26.60M</code></strong></td>
+<td style="text-align: left;">Slippage cap: execution over the simulated
+swap at the parent block</td>
+<td
+style="text-align: left;"><code>WHOLESALE_MAX_SLIPPAGE_PPM</code></td>
+<td style="text-align: left;">2% (proposed)</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Annual Programmatic
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>
-Buyback
-(<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>80</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">80\%</annotation></semantics></math></span>)</strong></td>
-<td style="text-align: left;"><strong>Direct Market Buy Pressure on
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span></strong></td>
-<td style="text-align: center;"><strong><code>$251k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$1.24M</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$3.76M</code></strong></td>
-<td style="text-align: center;"><strong><code>$752k</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$5.33M</code>
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math></span>
-<code>$21.28M</code></strong></td>
+<td style="text-align: left;">Size cap: one extrinsic's burns as a share
+of the pool's TAO reserve</td>
+<td style="text-align: left;"><code>WHOLESALE_MAX_BURN_PPM</code></td>
+<td style="text-align: left;">1% (proposed, calibrated on testnet)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Notice before any economic parameter, the
+floor or the curve changes</td>
+<td
+style="text-align: left;"><code>WHOLESALE_PARAM_NOTICE_WINDOWS</code></td>
+<td style="text-align: left;">600 windows (about 30 days)</td>
 </tr>
 </tbody>
 </table></div>
+<p>The OQ-291 replay found that at 25%/40% the guard for new purchases
+was closed in about 14% of windows over a subnet's first 90 days, and
+about 7% over days 30 to 90, while still closing 92% of windows that
+jumped more than 25% above the previous day's median. A subnet's launch
+month stays about 37% closed under any setting; resellers ride that out
+on a balance buffer (ADR-0064 §6).</p>
+<p><strong>The burn ledger</strong> (ADR-0063 §3b). Each window,
+validators publish one row per burn (payer, TAO in, alpha burned,
+outcome) and two identities anyone can recompute from the chain: TAO
+burned = credited + balance created + forfeited + held pending, and
+credited + balance spent = value of windows held. The company's own
+wholesale coldkeys are listed in it.</p>
+<p><strong>One disclosed asymmetry</strong> (ADR-0063 §1, red team L1).
+Every reseller pays the same clearing price, but a buyer that holds
+alpha gets back part of its fee through the price rise its own purchase
+causes. Every buyback works this way; it is disclosed, not fixed.</p>
 <h3
-id="63-three-year-subnet--operating-company-financial-projections">6.3
-Three-Year Subnet &amp; Operating Company Financial Projections</h3>
-<blockquote>
-<p><strong>Note:</strong> this table predates ADR-0063, ADR-0064 and
-ADR-0065 and is under review. Its buyback row assumes the retired
-buyback, and its operating-company rows were modelled under the 1.1
-assumptions, including the company's 20% protocol fee; under ADR-0063
-protocol revenue never passes through the company, which earns only as a
-reseller.</p>
-</blockquote>
-<p>Valuation is modeled as the <strong>Blended Average</strong> of two
-institutional methodologies:</p>
-<ol type="1">
-<li><strong>Emissions Comparable Multiple:</strong> Subnet annual
-incentive budget
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>×</mi><annotation encoding="application/x-tex">\times</annotation></semantics></math></span>
-comparable Bittensor dTAO market-cap-to-emissions multiples
-(<code>2.13x</code> Bear based on Chutes SN64; <code>2.69x</code> Base
-network average; <code>3.24x</code> Bull all-subnet multiple).</li>
-<li><strong>Infrastructure Revenue Multiple:</strong> Annual commercial
-revenue
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>×</mi><annotation encoding="application/x-tex">\times</annotation></semantics></math></span>
-infrastructure multiple (<code>10x</code> Bear, <code>15x</code> Base,
-<code>20x</code> Bull).</li>
-</ol>
-<div class="tw"><table>
-<thead>
-<tr>
-<th style="text-align: left;">Metric</th>
-<th style="text-align: center;">Bear (Y1 / Y2 / Y3)</th>
-<th style="text-align: center;">Base (Y1 / Y2 / Y3)</th>
-<th style="text-align: center;">Bull (Y1 / Y2 / Y3)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><strong>Network Emission
-Share</strong></td>
-<td style="text-align: center;"><code>0.20%</code> / <code>0.30%</code>
-/ <code>0.40%</code></td>
-<td style="text-align: center;"><code>0.60%</code> / <code>1.00%</code>
-/ <code>1.50%</code></td>
-<td style="text-align: center;"><code>1.50%</code> / <code>3.00%</code>
-/ <code>5.00%</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Bonded Transit
-Capacity</strong></td>
-<td style="text-align: center;"><code>20</code> / <code>40</code> /
-<code>60 Gbps</code></td>
-<td style="text-align: center;"><code>100</code> / <code>300</code> /
-<strong><code>800 Gbps</code></strong></td>
-<td style="text-align: center;"><code>300</code> / <code>1,500</code> /
-<strong><code>5,000 Gbps</code></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Subnet Incentive Budget
-(<code>$/yr</code>)</strong></td>
-<td style="text-align: center;"><code>$0.73M</code> /
-<code>$1.10M</code> / <code>$1.47M</code></td>
-<td style="text-align: center;"><code>$2.20M</code> /
-<code>$3.67M</code> / <strong><code>$5.50M</code></strong></td>
-<td style="text-align: center;"><code>$5.50M</code> /
-<code>$11.00M</code> / <strong><code>$18.33M</code></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Miner Capacity Pay
-(<code>$/Mbps/mo</code>)</strong></td>
-<td style="text-align: center;"><code>$1.00</code> / <code>$0.66</code>
-/ <code>$0.50</code></td>
-<td style="text-align: center;"><code>$0.53</code> (<code>3.5x</code>) /
-<code>$0.21</code> / <code>$0.09</code></td>
-<td style="text-align: center;"><code>$0.38</code> (<code>2.5x</code>) /
-<code>$0.10</code> / <code>$0.04</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Total Commercial Revenue
-(<code>$/yr</code>)</strong></td>
-<td style="text-align: center;"><code>$36k</code> / <code>$169k</code> /
-<code>$375k</code></td>
-<td style="text-align: center;"><code>$314k</code> / <code>$1.55M</code>
-/ <strong><code>$4.70M</code></strong></td>
-<td style="text-align: center;"><code>$940k</code> / <code>$6.66M</code>
-/ <strong><code>$26.60M</code></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Programmatic
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>
-Buyback (<code>$/yr</code>)</strong></td>
-<td style="text-align: center;"><code>$28.8k</code> /
-<code>$135.2k</code> / <code>$300k</code></td>
-<td style="text-align: center;"><code>$251.2k</code> /
-<code>$1.24M</code> / <strong><code>$3.76M</code></strong></td>
-<td style="text-align: center;"><code>$752k</code> / <code>$5.33M</code>
-/ <strong><code>$21.28M</code></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Subsidy Ratio (Emissions /
-<code>$1</code> Rev)</strong></td>
-<td style="text-align: center;"><code>20.37x</code> / <code>6.51x</code>
-/ <code>3.91x</code></td>
-<td style="text-align: center;"><code>7.01x</code> / <code>2.37x</code>
-/ <strong><code>1.17x</code></strong></td>
-<td style="text-align: center;"><code>5.85x</code> / <code>1.65x</code>
-/ <strong><code>0.69x</code></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Subnet Market Cap — Blended
-(<code>$</code>)</strong></td>
-<td style="text-align: center;"><code>$0.96M</code> /
-<code>$2.02M</code> / <strong><code>$3.44M</code></strong></td>
-<td style="text-align: center;"><code>$5.31M</code> /
-<code>$16.55M</code> / <strong><code>$42.64M</code></strong></td>
-<td style="text-align: center;"><code>$18.31M</code> /
-<code>$84.42M</code> / <strong><code>$295.70M</code></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Registration Payback
-Period</strong></td>
-<td style="text-align: center;"><code>22.4 months</code> (Y1)</td>
-<td style="text-align: center;"><strong><code>7.5 months</code>
-(Y1)</strong></td>
-<td style="text-align: center;"><strong><code>3.0 months</code>
-(Y1)</strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Operating Co. Gross Income
-(<code>$/mo</code>)</strong></td>
-<td style="text-align: center;"><code>$17.2k</code> /
-<code>$25.9k</code> / <code>$34.5k</code></td>
-<td style="text-align: center;"><code>$51.8k</code> /
-<code>$90.9k</code> / <strong><code>$166.5k</code></strong></td>
-<td style="text-align: center;"><code>$114.4k</code> /
-<code>$270.9k</code> / <strong><code>$678.6k</code></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Operating Co. Net Income
-(<code>$/mo</code>)</strong></td>
-<td style="text-align: center;"><code>-$22.8k</code> /
-<code>-$24.1k</code> / <code>-$25.5k</code></td>
-<td style="text-align: center;"><code>-$8.2k</code> /
-<code>-$9.1k</code> / <strong><code>+$16.5k</code></strong></td>
-<td style="text-align: center;"><code>+$34.4k</code> /
-<code>+$90.9k</code> / <strong><code>+$328.6k</code></strong></td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Operating Co. Valuation (Treasury
-+ OpCo)</strong></td>
-<td style="text-align: center;"><code>$0.13M</code> /
-<code>$0.27M</code> / <strong><code>$0.47M</code></strong></td>
-<td style="text-align: center;"><code>$0.49M</code> /
-<code>$1.52M</code> / <strong><code>$5.91M</code></strong></td>
-<td style="text-align: center;"><code>$6.20M</code> /
-<code>$18.81M</code> / <strong><code>$67.32M</code></strong></td>
-</tr>
-</tbody>
-</table></div>
+id="63-what-bandwidthos-earns-and-what-nobody-earns-adr-0063-6-adr-0064">6.3
+What BandwidthOS earns, and what nobody earns (ADR-0063 §6,
+ADR-0064)</h3>
+<ul>
+<li><p><strong>The protocol earns nothing.</strong> It holds no money
+and charges no fee. The fabric fee is burned.</p></li>
+<li><p><strong>Gateways</strong> earn their port fees, paid straight to
+their registered coldkeys window by window, plus emissions like any
+node.</p></li>
+<li><p><strong>Nodes, solvers and validators</strong> earn emissions
+only (§6.1).</p></li>
+<li><p><strong>BandwidthOS earns a reseller's margin, and nothing from
+the protocol.</strong> It pays the clearing price like every reseller
+and gets no early access to parameters or data. Protocol revenue never
+passes through it. For each window, its margin is</p>
+<p><div class="tw"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">margin</mtext><mo>=</mo><mtext mathvariant="normal">retail revenue</mtext><mo>−</mo><munder><mo>∑</mo><mtext mathvariant="normal">credits</mtext></munder><mtext mathvariant="normal">fabric fee</mtext><mo>−</mo><munder><mo>∑</mo><mtext mathvariant="normal">credits</mtext></munder><mtext mathvariant="normal">port fees</mtext><mo>−</mo><mtext mathvariant="normal">its own costs</mtext></mrow><annotation encoding="application/x-tex">\text{margin} = \text{retail revenue} - \sum_{\text{credits}} \text{fabric fee} - \sum_{\text{credits}} \text{port fees} - \text{its own costs}</annotation></semantics></math></div></p>
+<p>where the fabric fee and port fees are set by the card's clearing
+prices, and its own costs include buying TAO and the transaction fee on
+each purchase. None of these terms has a published value yet, so the
+paper gives no figure for it. Under its published treasury policy
+(ADR-0064 §6, ADR-0063 §6), its alpha comes only from retail margin and
+sits on hotkeys that never set weights; its holdings are disclosed
+quarterly; it keeps a balance buffer of a set number of windows; it
+sells no alpha within <code>N</code> windows (proposed 140, about 7
+days) of its own wholesale purchases, and at most 5% a month on an
+announced schedule. Any corporate buyback it chooses to run is kept out
+of the fabric burn ledger. Nodes BandwidthOS may run are a reference
+deployment and are paid like anyone's (§7.2); how that pay sits with the
+treasury rule is open (OQ-301).</p></li>
+</ul>
+<p><strong>What the old projections covered and the current model
+doesn't.</strong> The 1.1 model's VPN backbone and pay-per-GB exit
+revenue depend on exits, a later phase. The telemetry feed (§7.1) has no
+settlement path in ADR-0063. The repository's historical economic model
+still assumes the retired buyback and company fee, so this section uses
+only its emission inputs.</p>
 <hr />
 <h2
 id="7-bandwidthos-the-model-home-commercial-operations--go-to-market-workflows">7.
@@ -1650,10 +1584,11 @@ issuance, the customer dashboard, gateway operation and runbooks) is
 published as an open-source reference reseller under Apache-2.0. It has
 <strong>no protocol privilege</strong>: it pays the clearing price like
 every reseller, gets no early access to parameters or data, and gets no
-peering advantage. It competes on operations, support and brand. Whether
-the company is an Inc. or an LLC is not yet decided. Nothing in this
-section is built yet: wholesale is PB-49, the reference reseller PB-50,
-gateways PB-39.</p>
+peering advantage. It competes on operations, support and brand. It
+earns a reseller's margin, never protocol revenue (§6.3). Whether the
+company is an Inc. or an LLC is not yet decided. Nothing in this section
+is built yet: wholesale is PB-49, the reference reseller PB-50, gateways
+PB-39.</p>
 </blockquote>
 <h3 id="71-market-positioning-programmable-naas--middle-mile-sd-wan">7.1
 Market Positioning: Programmable NaaS &amp; Middle-Mile SD-WAN</h3>
@@ -1695,41 +1630,36 @@ pairwise latency, jitter, packet loss, and link-saturation matrices from
 validator measurement, for trading desks, CDNs, and WAN observability
 platforms.</li>
 </ol>
-<h3
-id="72-anchor-nodes-in-interconnect-hubs-later-phase-under-review">7.2
-Anchor Nodes in Interconnect Hubs (later phase, under review)</h3>
+<h3 id="72-bandwidthos-nodes-a-reference-deployment-planned">7.2
+BandwidthOS Nodes: a Reference Deployment (planned)</h3>
 <blockquote>
-<p><strong>Version 1.2 note.</strong> Version 1.1 had the company deploy
-"Anchor Core Routers" that acted as the fabric's ingress gateways, route
-reflectors and peering hubs. That conflicts with ADR-0064 §4 (no
-protocol privilege) and with the peering design, under which no node or
-company chooses the topology (§2.3, §4.2.1). The fabric is flat eBGP
-with no route reflectors. This section now keeps only what any operator
-could do, and the projection below is under review.</p>
+<p><strong>Version 1.3 note (founder, 2026-11-13; ADR-0064 §8).</strong>
+This replaces 1.1's company-owned "Anchor Core Routers" and 1.2's
+hub-node text, including its projection of capacity pay against hub
+transit cost, which rested on the retired <code>ALPHA</code>.</p>
 </blockquote>
-<p>To ease the two-sided cold start, BandwidthOS, or any operator, may
-run kernel-tuned nodes (bare-metal 10G/25G/100G servers running
-<code>bwos-node</code>, FRRouting <code>bgpd</code>/<code>bfdd</code>,
-WireGuard, and the <code>bwos-node tune-host</code> <code>FQ/BBR</code>
-offload profile) in major interconnect hubs (for example
-<code>IAD</code> Ashburn, <code>ORD</code> Chicago, <code>DFW</code>
-Dallas, <code>SJC</code> Silicon Valley, <code>FRA</code> Frankfurt,
-<code>AMS</code> Amsterdam, <code>LHR</code> London, and
-<code>NRT</code> Tokyo). Such nodes:</p>
+<p>BandwidthOS may run nodes, but only as a <strong>reference
+implementation</strong>: open-source code and a public example that
+others copy, so they can run nodes and resell as well. Its nodes:</p>
 <ul>
-<li><strong>Add early capacity and reach</strong> across continents
-before third-party node density reaches scale.</li>
-<li><strong>Are measured and paid like any other node,</strong> under
-the same Mechanism 0 rules, and peer through the same self-service
-process today and the same draw and plans later. They are not ingress
-gateways unless registered as gateways under ADR-0052's published
-criteria, which any datacenter operator can meet.</li>
-<li><strong>Projection from the 1.1 model (under review):</strong> with
-<code>ALPHA = 700,000</code> ppm, the 1.1 model had hub nodes earning
-<code>$0.53 / Mbps / month</code> from Mechanism 0 capacity emissions
-against a <code>$0.15 / Mbps / month</code> wholesale hub transit cost
-(<code>3.51x</code> coverage in Year 1). <code>ALPHA</code> was retired
-by ADR-0053.</li>
+<li><strong>Run the same open-source stack as anyone's</strong> (for a
+kernel node: <code>bwos-node</code>, FRRouting
+<code>bgpd</code>/<code>bfdd</code>, WireGuard and the
+<code>bwos-node tune-host</code> <code>FQ/BBR</code> profile), and how
+they are deployed is published with the rest of the reference
+implementation (ADR-0064 §3).</li>
+<li><strong>Get no protocol privilege</strong> (ADR-0064 §4). They are
+measured, paid and peered under the same Mechanism 0 rules as every
+node: self-service peering today, the draw and solver peering plans
+later (§2.3, §4.2.1). They hold no special role: not an anchor, an
+ingress point, a route reflector or a peering hub. The fabric is flat
+eBGP with no route reflectors, and no node or company chooses the
+topology. A BandwidthOS node is a gateway only if it registers as one
+under ADR-0052's published criteria, which any datacenter operator can
+meet.</li>
+<li><strong>Earn emissions like any operator's.</strong> How that pay
+sits with BandwidthOS's treasury rule, that its alpha comes only from
+retail margin, is open (OQ-301).</li>
 </ul>
 <p>Today on testnet, the team runs public nodes that peer with testers'
 nodes on request (§2.3), and every validator on subnet 611 is the team's
@@ -1740,8 +1670,8 @@ Transaction Clearing &amp; Settlement Workflow (Fiat/USDC to a TAO
 Burn)</h3>
 <blockquote>
 <p><strong>Version 1.2 note (ADR-0063, ADR-0065):</strong> this replaces
-the 1.1 workflow, in which the company kept 20% of revenue and bought
-alpha with 80%. Proposed details, pending a red team; not built (PB-49,
+the 1.1 workflow, in which the company bought alpha with customer
+revenue. Proposed details, pending a red team; not built (PB-49,
 PB-39).</p>
 </blockquote>
 <p>Enterprise customers never need to custody TAO or
@@ -1774,21 +1704,24 @@ emissions from measured capacity, availability and, once scored, canary
 carriage, every 360-block tempo. Customer money reaches them through the
 burn's effect on the subnet's pool, with no accounts-payable process
 across hundreds of independent operators.</li>
+<li><strong>The Reseller's Margin:</strong> What the reseller keeps is
+its customer revenue less the fabric fees it burned, the port fees it
+paid and its own costs (§6.3).</li>
 </ol>
 <hr />
 <h3 id="74-go-to-market-sequences--end-to-end-user-stories">7.4
 Go-To-Market Sequences &amp; End-to-End User Stories</h3>
 <blockquote>
-<p><strong>Version 1.2 note.</strong> These sequences are illustrative,
-with fictional names, and were written for 1.1. Their dollar figures are
-unchanged and under review. Where a step relied on company-owned anchor
-routers with special roles or on the 80/20 buyback, it now follows
-ADR-0063 and ADR-0064, and the 1.1 figure is kept in the text. Sequence
-3's appliance and all of Sequence 4 are later phases.</p>
+<p><strong>Version 1.3 note.</strong> These sequences are illustrative,
+with fictional names, and were first written for 1.1. Their contract
+figures stand. Where a step relied on company-owned anchor routers or on
+the retired buyback, it follows ADR-0063 and ADR-0064, and 1.3 removes
+the 1.1 figures that rested on the buyback or on <code>ALPHA</code>
+(§6). Sequence 3's appliance and all of Sequence 4 are later phases.</p>
 </blockquote>
 <h4
-id="sequence-1-beachhead-1--months-16-hub-nodes--onboarding-vpn-providers">Sequence
-1 (Beachhead 1 — Months 1–6): Hub Nodes &amp; Onboarding VPN
+id="sequence-1-beachhead-1--months-16-reference-nodes--onboarding-vpn-providers">Sequence
+1 (Beachhead 1 — Months 1–6): Reference Nodes &amp; Onboarding VPN
 Providers</h4>
 <ul>
 <li><strong>Actors:</strong> <strong>BandwidthOS</strong> (the first
@@ -1798,12 +1731,11 @@ Hosting</strong> (a regional colocation operator with 6 Gbps of idle
 95th-percentile transit headroom).</li>
 <li><strong>End-to-End Workflow:</strong>
 <ol type="1">
-<li><strong>Hub Nodes:</strong> BandwidthOS brings online 6 nodes
+<li><strong>Reference Nodes:</strong> BandwidthOS brings online 6 nodes
 (<code>100 Gbps</code> aggregate commit) in Ashburn, Chicago, Frankfurt,
-Amsterdam, Dallas, and Tokyo, measured and paid like anyone's. In the
-1.1 model (under review), Mechanism 0 capacity emissions
-(<code>$0.53/Mbps/mo</code>) cover the wholesale transit commit
-(<code>$0.15/Mbps/mo</code>) by <code>3.5x</code>.</li>
+Amsterdam, Dallas, and Tokyo as a reference deployment (§7.2): open
+source, published for others to copy, and measured and paid like
+anyone's.</li>
 <li><strong>Pilot Onboarding:</strong> BandwidthOS onboards
 <strong>Lantern VPN</strong> onto a 30-day pilot. Lantern runs
 <code>bwos-node</code> on 10 of its busiest ingress/exit servers, which
@@ -1826,14 +1758,14 @@ regional servers as Transit Fabric <strong>Exit Partners</strong>
 (<code>ADR-0004</code>).</li>
 <li><strong>Demand Reaches the Subnet:</strong> BandwidthOS buys the
 wholesale lanes Lantern's traffic needs by burning TAO at the rate
-card's clearing price (§7.3). (The 1.1 text routed
-<code>$8,000/month</code>, <code>80%</code>, into programmatic
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>
-buybacks; that split is retired and the figure is under review.) Seeing
-the subnet's emissions and demand, <strong>Ridgeline Hosting</strong>
-registers a Mechanism 0 UID, peers its 3 Gbps idle commit into the
-fabric, and earns capacity emissions. Lantern's paid traffic itself
-earns no one anything (ADR-0053).</li>
+card's clearing price (§7.3). How much of Lantern's
+<code>$10,000/month</code> is burned depends on the card's clearing
+prices and port fees, which aren't set yet (§6.2); the rest is
+BandwidthOS's margin and costs (§6.3). Seeing the subnet's emissions and
+demand, <strong>Ridgeline Hosting</strong> registers a Mechanism 0 UID,
+peers its 3 Gbps idle commit into the fabric, and earns capacity
+emissions. Lantern's paid traffic itself earns no one anything
+(ADR-0053).</li>
 </ol></li>
 </ul>
 <h4
@@ -1872,10 +1804,7 @@ stripe TensorForge's bulk transfers across parallel Mechanism 0 transit
 paths.</li>
 <li><strong>Clearing:</strong> TensorForge pays BandwidthOS a monthly
 commit + per-TB burst fee in USD; BandwidthOS buys the lanes by burning
-TAO and issues <code>BandwidthVouchers</code> (§7.3). (The 1.1 text
-cleared <code>80%</code> of revenue into
-<span class="mw"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>
-buybacks; retired.)</li>
+TAO and issues <code>BandwidthVouchers</code> (§7.3).</li>
 </ol></li>
 </ul>
 <h4
@@ -2408,8 +2337,10 @@ window; validators' stores drop the rest (ADR-0067)</td>
 </table></div>
 <p>Peering parameters (<code>PEER_CHANGES_PER_WINDOW</code>,
 <code>PEER_EXPLORE</code>, <code>PEER_SUSPEND_WINDOWS</code>, the draw
-size and <code>MAX_PEERS</code>) and wholesale parameters (ADR-0063,
-ADR-0065) are set by their ADRs and are not yet fixed.</p>
+size and <code>MAX_PEERS</code>) are set by their ADRs and are not yet
+fixed. Wholesale parameters (ADR-0063, ADR-0065) are proposed; §6.2
+lists the guard values, and the floor, curve and minimum purchase are
+calibrated before mainnet.</p>
 <hr />
 <h2 id="11-conclusion">11. Conclusion</h2>
 <p>Transit Fabric demonstrates that an open, decentralized network does

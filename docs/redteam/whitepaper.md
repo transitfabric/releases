@@ -1,8 +1,8 @@
-> Taken from the Transit Fabric source repository at commit 5a67e29 (5a67e292db0a6b5732ff1c45554c79f81198cf2a, main), file docs/whitepaper.md. Links into the private source tree are shown as plain text.
+> Taken from the Transit Fabric source repository at commit 940dc25 (940dc2529d04c2b2c116bfa27ba738cf7868f718, main), file docs/whitepaper.md. Links into the private source tree are shown as plain text.
 
 # Transit Fabric: A Cryptographically Verifiable `fc00::/8` eBGP Transit Fabric and Multi-Commodity Routing Market on Bittensor
 
-**Version:** 1.2 (2026-11-13). Replaces 1.1 (2026-11-07).  
+**Version:** 1.3 (2026-11-13). Replaces 1.2, published earlier the same day.  
 
 **Status labels.** Every feature in this paper carries one of three labels:
 - **Live:** runs today on Bittensor testnet, subnet 611 (tester build `v0.1.0-tester.3`). Validators on 611 are all run by the Transit Fabric team for now.
@@ -11,16 +11,26 @@
 
 Launch is transit (Mechanism 0) and route solving (Mechanism 1) only. Transit Fabric is not yet registered on mainnet, so nothing described here runs there.
 
+## What changed in version 1.3
+
+These changes follow the founder's answers to the 1.2 review on 2026-11-13.
+
+1. **Economics rewritten to the current model** (§6; ADR-0053, ADR-0063, ADR-0064, ADR-0065). Removed: the 1.1 model's 80/20 company buyback, the company's 20% fee on protocol revenue, the `ALPHA` step-down tied to it, the subsidy ratios, and the three-year revenue, market-cap and company-income projections. §6 now says who pays whom, in what unit and what is burned, with ADR-0063's rate-card and clearing formulas, ADR-0065's TAO/USD conversion and a worked example, and the burn guards' values from the OQ-291 calibration. No new projection replaces the old ones.
+2. **How BandwidthOS earns** (§6.3, §7). A reseller's margin, never protocol revenue. The protocol holds no money and charges no fee.
+3. **BandwidthOS may run nodes, as a reference deployment** (founder, 2026-11-13; ADR-0064 §8; §7.2). Open-source code and a public example for others to copy, with no protocol privilege and no special role. The hub-node projection and every "anchor" role are removed. How these nodes' emissions sit with the company's treasury rule is open (OQ-301).
+4. **Go-to-market sequences** (§7.4). The contract figures stay. The 1.1 buyback figure and the capacity-pay projection in Sequence 1 are removed; the BFD failover change in §7.1 stays.
+5. **Change notes, abstract and §4.1** brought in line: 1.1 item 7 and 1.2 items 3 and 5 point to the new §6 and §7.2, and §4.1's step 5 no longer describes the `ALPHA` step-down as current. The company form is still not decided (Inc. or LLC).
+
 ## What changed in version 1.2
 
 These decisions were made between 2026-11-08 and 2026-11-13 and are reflected in the sections below. Where a section still describes an older design, it says so.
 
 1. **Route solvers also discover peers: the peering plan** (System One autonomous peering design, approved 2026-11-12; abstract, §2.3, §4.2.1). Solvers compete on a peering plan, the adjacency set for the next window, alongside their route tables, and validators score plans and attest the winner by quorum. Node and solver RTTs are hints that can only narrow a node's placement. **Planned, not built:** its two ADRs and an incentive red team come first. Today peering is self-service.
 2. **System One on the launch path** (ADR-0067; §2.4). `fabric-sense` ships first on kernel, no-root and container nodes, as rules only. Two jobs are live on testnet 611: rebuilding a stale validator-set anchor, and automatic fault reports that are never a scoring input. `bwos doctor`, `bwos report` and an agent skill share one symptom registry. The model, the skill library and routers come later. This narrows 1.1 item 6.
-3. **The buyer burns; nobody holds the money** (ADR-0063, proposed, revision 5; the founder chose burn on 2026-11-11; §6.1, §7.3). A reseller buys wholesale capacity by calling `add_stake_burn`, which buys the subnet's alpha from the pool and destroys it in the same call, signed by the buyer's own coldkey. There is no protocol treasury and no custodian. This replaces 1.1 item 2's "the company converts it to TAO and buys alpha" and the 80/20 buyback of §6. Details pending red team and simulation; not built (PB-49).
-4. **Wholesale is quoted in US dollars and settled by burning TAO** (ADR-0065, accepted in principle on 2026-11-12, details proposed pending a red team; §6.1, §7.3). Each window's rate card carries one TAO/USD reference read from the chain at a fixed block. Bittensor's Gamma credits are a later option, not part of v0.
-5. **BandwidthOS is the "model home"** (ADR-0064; §7). BandwidthOS is the one company around Transit Fabric: the first reseller and first gateway. Everything it runs is open source, it has no protocol privilege, and it pays the same clearing price as any reseller. Its own alpha comes only from retail margin and sits on hotkeys that never set weights. This replaces 1.1 item 7's framing and §7.2's company-owned anchor routers with special roles.
-6. **The name is Transit Fabric** (ADR-0062, ADR-0066; title and throughout). Transit Fabric is the open protocol and network; BandwidthOS is only the company. Code keeps the `bwos` names until a trademark search before mainnet. The old name PIPE is retired everywhere.
+3. **The buyer burns; nobody holds the money** (ADR-0063, proposed, revision 5; the founder chose burn on 2026-11-11; §6.2, §7.3). A reseller buys wholesale capacity by calling `add_stake_burn`, which buys the subnet's alpha from the pool and destroys it in the same call, signed by the buyer's own coldkey. There is no protocol treasury and no custodian. This replaces 1.1 item 2's "the company converts it to TAO and buys alpha" and the 1.1 80/20 buyback; 1.3 removes the projections built on it (§6). Details pending red team and simulation; not built (PB-49).
+4. **Wholesale is quoted in US dollars and settled by burning TAO** (ADR-0065, accepted in principle on 2026-11-12, details proposed pending a red team; §6.2, §7.3). Each window's rate card carries one TAO/USD reference read from the chain at a fixed block. Bittensor's Gamma credits are a later option, not part of v0.
+5. **BandwidthOS is the "model home"** (ADR-0064; §7). BandwidthOS is the one company around Transit Fabric: the first reseller and first gateway. Everything it runs is open source, it has no protocol privilege, and it pays the same clearing price as any reseller. Its own alpha comes only from retail margin and sits on hotkeys that never set weights. This replaces 1.1 item 7's framing and §7.2's company-owned anchor routers with special roles. *(1.3: BandwidthOS may run nodes only as a reference deployment, §7.2.)*
+6. **The name is Transit Fabric** (ADR-0062, ADR-0066; title and throughout). Transit Fabric is the open protocol and network; BandwidthOS is only the company. Code keeps the `bwos` names until a trademark search before mainnet. The project's old name is retired everywhere.
 7. **Inline node bindings** (ADR-0058; §2.1). Live. A hotkey binds up to 7 nodes inside its own on-chain commitment, with no server to publish from.
 8. **Linking with a browser wallet** (ADR-0054; §2.1). Live. A static page lets Talisman, SubWallet or Polkadot.js sign the binding, so no hotkey file sits on the operator's machine.
 9. **Probe sessions keyed by the node key** (ADR-0061; §2.1). Live. A node's probe sessions use the X25519 form of its node key, so no operator hands WireGuard bindings to validators.
@@ -32,7 +42,7 @@ These decisions were made between 2026-11-08 and 2026-11-13 and are reflected in
 
 ## What changed in version 1.1
 
-These decisions were made on 2026-11-06 and are reflected in the sections below. Where a section still describes the older design, it says so. Version 1.2 revises some of them: item 2 by 1.2 items 3 and 4, item 3 by item 11 (proposed), item 4 by items 3 and 5, item 6 by item 2, and item 7 by item 5.
+These decisions were made on 2026-11-06 and are reflected in the sections below. Where a section still describes the older design, it says so. Version 1.2 revises some of them: item 2 by 1.2 items 3 and 4, item 3 by item 11 (proposed), item 4 by items 3 and 5, item 6 by item 2, and item 7 by item 5. Version 1.3 removes the projections built on item 2's buyback (§6).
 
 1. **Unearned weight goes to a disclosed first-party UID, not a burn or recycle UID** (§4.2; `scoring.md` §Unearned weight and the first-party UID). Version 1.0 sent the reference solver's share to a burn UID. That was dropped: the usual way to burn on Bittensor is to weight the owner's own hotkey, which the chain penalises by cutting the subnet's TAO share.
    - **Routing (Mechanism 1):** unearned weight goes to a public first-party UID on a separate coldkey, and the amount is reported every window. Unearned weight means the reference solver's share, or everything when no solver scores. It shrinks as outside solvers beat the reference solver by more than `EPSILON_ROUTE` (2%).
@@ -42,7 +52,7 @@ These decisions were made on 2026-11-06 and are reflected in the sections below.
 4. **Buyback alpha never becomes validator power** (ADR-0053, OQ-105). The company holds the alpha it buys on hotkeys that never set weights, and that stake counts for nothing in measurement. *(Revised in 1.2: wholesale burns leave no alpha to hold. BandwidthOS's own alpha comes only from retail margin, under the same rule, ADR-0064 §6.)*
 5. **Gateways** (ADR-0052; §7). Registered datacenter operators can on-ramp customers over BGP, cross-connects or a proxy. They can off-ramp to a customer's own network, or to allowlisted public destinations, so the customer's far end needs no Transit Fabric software. Ordinary transit nodes still never egress.
 6. **One System One sidecar on every node, with a public skill library learned from the fleet** (ADR-0047, ADR-0048, ADR-0050).
-7. **The operating company is BandwidthOS** (Inc. or LLC, not yet decided).
+7. **The operating company is BandwidthOS** (Inc. or LLC, not yet decided). *(1.3: it earns a reseller's margin, never protocol revenue, §6.3.)*
 
 
 **Code:** a Rust workspace (`bwos-core`, `bwos-net`, `bwos-node`, `bwos-solver`, `bwos-validator`, `bwos-probe`, `bwos-chain`, `bwos-cli`, `bwos-client`, `bwos-sim`). Code identifiers keep the `bwos` prefix until the trademark search before mainnet (ADR-0062, ADR-0066). Transit Fabric is the protocol and the network; BandwidthOS is a separate company, its first reseller (ADR-0064).
@@ -53,7 +63,7 @@ These decisions were made on 2026-11-06 and are reflected in the sections below.
 
 The global internet backbone suffers from two structural inefficiencies: **(1) stranded physical capacity**, where datacenter and hosting operators purchase committed 95th-percentile transit and leave 30–60% of their committed headroom idle, and **(2) performance-blind routing**, where the Border Gateway Protocol (BGP) selects paths by Autonomous System (AS) hop count and bilateral billing policy rather than real-time latency, jitter, packet loss, or link saturation. Hyperscalers (Google B4, Meta Express Backbone, Cloudflare Argo) solved these problems internally using private Software-Defined Wide Area Networks (SD-WANs) and centralized Multi-Commodity Flow (MCF) traffic-engineering solvers, but those capabilities remain locked inside proprietary corporate backbones. Meanwhile, first-generation decentralized bandwidth and VPN networks failed to capture institutional datacenter supply due to exit-node abuse liability, trivial self-dealing (wash-trading) of byte counters, and userspace cryptographic bottlenecks.
 
-We present **Transit Fabric**, a Bittensor subnet that turns committed datacenter and prosumer edge bandwidth into an open, cryptographically verifiable Layer-3/Layer-4 transit fabric. Every node and client in Transit Fabric derives a deterministic, unforgeable `/128` IPv6 Unique Local Address (`fc00::/8`) directly from its Ed25519 public key, forming a flat, zero-registry eBGP overlay (`ASN 4200000000+`) over WireGuard links: kernel WireGuard on kernel nodes, and userspace WireGuard on nodes that run without root. IPsec ESP (`RFC 4303`) and IEEE 802.1AE MACsec backbone links are planned for later. To align incentives without a central coordinator, Transit Fabric splits Bittensor emissions across two specialized mechanisms: **Mechanism 0 (`mechid=0`)** rewards transit operators for verified bottleneck capacity and conservation-of-flow traffic delivery, while **Mechanism 1 (`mechid=1`)** runs a continuous tournament among route solvers that compute capacity-aware, multi-class (`realtime`, `low_latency_hd`, `bulk`, `economy`, `resilient`) route tables. Solvers will also discover peers: in the planned design, they compete on a **peering plan**, the set of links the fabric runs next window, which validators score and attest by quorum, so no node or company chooses the topology. Transit nodes never egress to the public internet; only registered exit partners and registered gateways do (`ADR-0004`, `ADR-0052`). Nodes are paid only in emissions: on testnet today for uptime and capacity proven by validator tests, and, once the designed canary stream is scored, for carriage of a validator-allocated canary stream checked at every hop (`ADR-0051`). Customer traffic is checked, never credited (`ADR-0053`), so wash-trading earns nothing, while forwarding stays at kernel line rate. Customer money reaches the subnet by a burn the buyer makes itself: a reseller buys capacity by burning TAO into the subnet's pool, so no treasury or company holds it (`ADR-0063`, `ADR-0065`, proposed). We validate the protocol through a 50-window adversarial game-theoretic simulator, live transatlantic multi-region deployments across North America and Europe, and a public test network on Bittensor testnet, subnet 611.
+We present **Transit Fabric**, a Bittensor subnet that turns committed datacenter and prosumer edge bandwidth into an open, cryptographically verifiable Layer-3/Layer-4 transit fabric. Every node and client in Transit Fabric derives a deterministic, unforgeable `/128` IPv6 Unique Local Address (`fc00::/8`) directly from its Ed25519 public key, forming a flat, zero-registry eBGP overlay (`ASN 4200000000+`) over WireGuard links: kernel WireGuard on kernel nodes, and userspace WireGuard on nodes that run without root. IPsec ESP (`RFC 4303`) and IEEE 802.1AE MACsec backbone links are planned for later. To align incentives without a central coordinator, Transit Fabric splits Bittensor emissions across two specialized mechanisms: **Mechanism 0 (`mechid=0`)** rewards transit operators for verified bottleneck capacity and conservation-of-flow traffic delivery, while **Mechanism 1 (`mechid=1`)** runs a continuous tournament among route solvers that compute capacity-aware, multi-class (`realtime`, `low_latency_hd`, `bulk`, `economy`, `resilient`) route tables. Solvers will also discover peers: in the planned design, they compete on a **peering plan**, the set of links the fabric runs next window, which validators score and attest by quorum, so no node or company chooses the topology. Transit nodes never egress to the public internet; only registered exit partners and registered gateways do (`ADR-0004`, `ADR-0052`). Nodes are paid only in emissions: on testnet today for uptime and capacity proven by validator tests, and, once the designed canary stream is scored, for carriage of a validator-allocated canary stream checked at every hop (`ADR-0051`). Customer traffic is checked, never credited (`ADR-0053`), so wash-trading earns nothing, while forwarding stays at kernel line rate. Customer money reaches the subnet by a burn the buyer makes itself: a reseller buys wholesale capacity, quoted in US dollars, by burning TAO into the subnet's pool, so no treasury or company holds it and the protocol charges no fee (`ADR-0063`, proposed; `ADR-0065`). BandwidthOS, the first reseller, earns only its retail margin (`ADR-0064`). We validate the protocol through a 50-window adversarial game-theoretic simulator, live transatlantic multi-region deployments across North America and Europe, and a public test network on Bittensor testnet, subnet 611.
 
 ---
 
@@ -299,7 +309,7 @@ For each transit operator UID $u$ in window $w$:
 
 5. **Blended Mechanism 0 Share ($\text{share}_u$):**
    $$\text{share}_u = \left\lfloor \frac{\text{ALPHA} \cdot \text{cap}_u}{\sum_j \text{cap}_j} \right\rfloor + \left\lfloor \frac{(10^6 - \text{ALPHA}) \cdot \widehat{\text{use}}_u}{\sum_j \widehat{\text{use}}_j} \right\rfloor$$
-   At network bootstrap, $\text{ALPHA} = 700{,}000\text{ ppm}$ ($70\%$ bonded capacity, $30\%$ verified traffic usage) to guarantee reliable baseline capacity for launch partners, stepping down via governance as paid traffic volume scales.
+   In 1.0, $\text{ALPHA} = 700{,}000\text{ ppm}$ ($70\%$ bonded capacity, $30\%$ verified traffic usage). Since 1.1 the capacity weight is `W`, which is $10^6$ (capacity only) until PB-38's canary-carriage term lands, and the step-down tied to paid traffic is retired (ADR-0053, PB-40).
 
 ---
 
@@ -367,24 +377,38 @@ Bittensor subnets have a fixed number of UID slots (e.g., 256), so desktop and h
 
 ---
 
-## 6. Tokenomics, Buyer-Side Burn & 3-Year Financial Projections
+## 6. Tokenomics: Emissions, Wholesale and the Buyer-Side Burn
 
-> **Version 1.2 note.** Version 1.1 had the company take customer revenue, convert it to TAO and buy alpha (an 80/20 buyback). That is replaced by a burn the buyer makes itself (ADR-0063; the founder chose burn on 2026-11-11), with prices quoted in US dollars and settled in TAO (ADR-0065, accepted in principle). ADR-0063 is proposed (revision 5) and ADR-0065's details are proposed; both await a red team and PB-49's simulations, and none of it is built. **The projections in §6.2 and §6.3 were built on the 1.1 buyback model; their numbers are unchanged and under review.**
+> **Version 1.3 note (founder, 2026-11-13).** This section is rewritten to the current model. Removed: the 1.1 model's 80/20 company buyback, the company's 20% fee on protocol revenue, the `ALPHA` step-down tied to the buyback, the subsidy ratios, and the three-year revenue, market-cap and company-income projections (1.2's §6.2 and §6.3). Their premises are retired (ADR-0053, ADR-0063, ADR-0064, ADR-0065), and the current model has no projection to replace them. In their place, this section says who pays whom, in what unit, and what is burned.
+>
+> **Status.** Emissions-only pay is accepted (ADR-0053) and live on testnet 611 as capacity pay (§4.1). The buyer-side burn is the decided direction: the founder approved ADR-0063's direction and chose burn over recycle on 2026-11-11 (OQ-288). ADR-0063 itself is still *proposed* (revision 5), pending its red team and PB-49's simulations. US-dollar quoting (ADR-0065) is accepted in principle, with its details proposed. None of the wholesale path is built (PB-49).
 
-### 6.1 How customer money reaches the subnet: the buyer burns (ADR-0063, ADR-0065)
+### 6.1 Two flows that never meet (ADR-0053)
 
-Under Bittensor's Dynamic TAO (dTAO) emission model, each subnet's share of daily network emissions (`3,600 TAO/day`, or `~$366.6M/year` at `$279/TAO`) is determined by the Exponential Moving Average (EMA) price of its subnet token ($\alpha$). Within the subnet, emissions are distributed **`41%` to Miners** (Mechanism 0 transit operators and Mechanism 1 route solvers), **`41%` to Validators**, and **`18%` to the Subnet Owner**.
+Transit Fabric keeps protocol pay and customer money in two separate flows. Nothing from the second ever enters the first as a scoring input.
 
-Transit Fabric couples commercial transit revenue to the $\alpha$ token without anyone holding the money:
+1. **The emissions flow (live on testnet).** Nodes, gateways, solvers and validators are paid only in the subnet's alpha emissions, allocated by what validators measure themselves: capacity and uptime today, canary carriage once PB-38 scores it (Mechanism 0), and routing quality (Mechanism 1). No node is paid for carrying traffic directly. The economic model's inputs (`docs/economics/README.md`, as of 2026-10-17) are Bittensor's `3,600 TAO/day` of network emissions and the per-subnet split of **41% to miners** (here, nodes and solvers), **41% to validators** and **18% to the subnet owner**.
+2. **The commercial flow (designed, ADR-0063 proposed).** Customers pay resellers. Resellers buy wholesale capacity by burning TAO, and pay gateways a port fee. Payments, vouchers, credits, client receipts and the rate card are **never a scoring input**, so faking, buying or steering "paid" traffic earns nothing, and mishandling customer traffic can only lower a score (ADR-0053 §2).
+
+**How customer money reaches nodes and solvers: through the pool, never through receipts** (ADR-0053 §4, ADR-0063). A wholesale purchase buys the subnet's alpha from its pool with TAO and destroys it. Each purchase puts TAO into the pool and removes the alpha it bought. A subnet's share of network emissions depends on its pool: the economic model takes it as set by the alpha price, and ADR-0065 counts a burn as TAO flow into the pool for the emission share. Either way, more customers make every participant's emissions worth more. Nobody, the company included, can move any participant's slice: allocation within the subnet is set only by measurement (ADR-0049, ADR-0053). One caution from ADR-0063 (OQ-288): `SubnetAlphaOut` doesn't drop on a burn, so a supply figure derived from it overstates circulating alpha.
+
+### 6.2 Who pays whom, in what unit, and what is burned (ADR-0063, ADR-0065)
+
+| Payer | Payee | For | Quoted in | Paid in | Burned? |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| End customer | A reseller (BandwidthOS, a VPN, an ISP, a broker) | The reseller's product: transit now, exits in a later phase | The reseller's choice | Any currency the reseller accepts (wire, card, USDC) | No. The protocol never touches fiat or USDC |
+| Reseller | Nobody: the subnet pool | The **fabric fee**: one window of a lane's rate cap and byte quota | Micro-US-dollars (`uusd`, $10^{-6}$ USD) per GiB, on the validators' rate card | TAO, by `SubtensorModule.add_stake_burn` from the reseller's own coldkey | **Yes.** The TAO buys alpha from the pool, and that alpha is destroyed in the same call |
+| Reseller | Each lane gateway's registered coldkey | The **port fee**, per window, before the next auction | `uusd` per GiB, from the gateway's signed registration, fixed per credit by the card | TAO, by `Balances.transfer_keep_alive` | No. It is the gateway's revenue |
+| The chain's emissions | Nodes, gateways, solvers, validators and the owner | Measured work (§4) | — | Alpha, every 360-block tempo | No |
 
 ```mermaid
 flowchart LR
     Cust["End customers\n(any currency)"]
     Res["Resellers\n(BandwidthOS, VPNs, ISPs, brokers)"]
-    Card["Validator-signed rate card\n(lanes, USD prices, one TAO/USD reference)"]
+    Card["Validator-signed rate card\n(lanes, uusd prices, one TAO/USD reference)"]
     Burn["add_stake_burn, signed by the reseller\nTAO buys α from the pool; α destroyed"]
-    Pool["Subnet pool: TAO inflow,\nα supply falls"]
-    Em["Subnet emission share\n-> miner and validator pay"]
+    Pool["Subnet pool: TAO in,\nbought α destroyed"]
+    Em["Emissions: nodes, gateways,\nsolvers, validators, owner"]
     GW["Gateways\n(port fee in TAO, per window)"]
 
     Cust --> Res
@@ -395,67 +419,64 @@ flowchart LR
     Pool --> Em
 ```
 
-1. **Three layers, each with one job.** The **protocol** publishes a rate card, reads purchases from the chain and publishes credits and balances; nobody operates it and it takes nothing but burned TAO. **Resellers** (anyone: BandwidthOS, a VPN, an ISP, a broker) sell to end customers in any currency, buy TAO and make purchases. **Gateways** (registered datacenter operators, ADR-0052) on-ramp and off-ramp traffic, meter it and enforce credits. Currency conversion is the reseller's job; the protocol never touches fiat or USDC.
-2. **The buyer does the buyback.** A purchase is one transaction from the reseller's own coldkey: `SubtensorModule.add_stake_burn`, which buys the subnet's alpha from the pool with TAO and burns it in the same call, plus a remark naming the credit. Nothing is left to hold, so there is **no treasury and no custodian**, and protocol revenue never passes through the company. A burn is final: nothing is refunded for unused bytes, a lapse or deregistration. A testnet check on subnet 611 (2026-11-11) confirmed that a coldkey which is not the subnet owner can make this call.
-3. **The rate card.** Each window, validators publish a signed rate card. A lane is an ordered pair of gateways run by different operators; its sellable headroom comes from verified capacity, and its price per GiB rises as the lane fills. Purchases in a window clear as one uniform-price batch auction. The card, credits and payments are **never a scoring input** (ADR-0053).
-4. **Quoted in dollars, settled in TAO (ADR-0065).** Prices, bids, balances and port fees are in micro-US-dollars. The card for each window carries one TAO/USD reference, read from the chain's `TaoUsdPrice` at a fixed finalized block, so every validator converts the same way. Resellers carry TAO/USD risk only between buying TAO and burning it. Bittensor's Gamma credits are a later option, adopted only by a new ADR.
-5. **Guards for alpha holders.** Every burn faces price guards: a reference price over about 7 days, a volatility gate, a slippage cap and a per-extrinsic impact cap, so a purchase can't be timed against a spike. Every burn appears in a public burn ledger, and economic parameters change only with about 30 days' notice.
-6. **Gateways are paid directly.** Each window's port fee goes from the reseller to each lane gateway's registered coldkey, in TAO, before the next auction. No gateway holds money for service it hasn't delivered.
-7. **Nodes are still paid only in emissions.** Customer money reaches nodes and solvers through the subnet's pool and emission share, never through receipts or vouchers (ADR-0053).
+**Three layers, each with one job** (ADR-0063 §1). The **protocol** publishes the rate card, reads purchases from the chain and publishes credits, balances and a burn ledger; nobody operates it and it takes nothing but burned TAO. **Resellers** sell to end customers, buy TAO, make purchases and issue `BandwidthVouchers`. **Gateways** (registered datacenter operators, ADR-0052) on-ramp and off-ramp traffic, meter it at both ends of a lane and enforce credits. Currency conversion is the reseller's job. There is **no treasury, no custodian and no protocol fee**: at the protocol level no one receives revenue except gateways, which receive their own port fees.
 
-#### Projection assumptions from the 1.1 model (under review)
+**The rate card** (ADR-0063 §2, amended by ADR-0065 §4). Each window, validators publish a signed card. A lane is an ordered pair of gateways run by different operators. v0 sells one class, `best_effort`: a byte quota plus a rate cap. For each lane:
 
-The items below are the 1.1 text, kept with its numbers because the §6.2 and §6.3 projections rest on them. The 80/20 split in item 1 is replaced by the burn above, and the `ALPHA` step-down in item 2 was retired by ADR-0053 (Mechanism 0 pays on capacity until canary carriage is scored). The founder is reviewing these assumptions.
+$$\text{headroom} = \min(\text{min\_cut}, \text{egress}) \cdot \frac{\texttt{WHOLESALE\_SELLABLE\_PPM}}{10^6} - \text{sold rate}$$
 
-1. **80% Programmatic $\alpha$ Buyback / 20% Protocol Fee:** Customers (VPN partners, enterprises linking multi-cloud clusters, and telemetry buyers) pay in stablecoins, fiat, or $\alpha$. **`80%` of gross external revenue** is used programmatically to buy back $\alpha$ from the subnet liquidity pool, while **`20%`** is retained by the operating company to fund core engineering, hardware appliance certification, and business development.
-2. **Bootstrap-to-Usage Transition ($\alpha$ Parameter Step-Down):**
-   - In **Year 1**, Mechanism 0 sets `ALPHA = 700,000` ppm ($70\%$ capacity / $30\%$ usage). At `100 Gbps` bonded capacity in the Base case, emissions pay operators **`$0.53 / Mbps / month`**—**`3.51x` the benchmark `$0.15 / Mbps / month` hub transit rate**—creating a powerful supply-side magnet for datacenter operators with idle 95th-percentile headroom.
-   - In **Years 2 and 3**, as commercial traffic scales, `ALPHA` steps down (`70% -> 50% -> 40%` in Base; `60% -> 40% -> 30%` in Bull), shifting miner rewards from passive capacity standby to active, receipt-verified paid throughput.
-3. **Compressing the Emission Subsidy Ratio:** Across the broader Bittensor network, subnets typically require `$22–$40` of token emissions per `$1` of external customer revenue. Because bandwidth transit is an existing multi-billion-dollar institutional market, Transit Fabric compresses its **Subsidy Ratio (Annual Emissions $\div$ Annual Customer Revenue)** from `7.01x` in Year 1 to **`1.17x` in Year 3 (Base)** and **`0.69x` in Year 3 (Bull)**—where external customer revenue exceeds total network emissions paid to the subnet.
+$$\text{price}_{\text{uusd/GiB}} = \frac{\texttt{WHOLESALE\_FLOOR\_UUSD\_PER\_GIB} \cdot \text{curve}(\text{utilization\_ppm})}{10^6}$$
 
-### 6.2 Four Commercial Revenue Streams (`Bear / Base / Bull` Model)
-> **Note:** this table predates ADR-0063 and ADR-0065 and is under review. Its "Annual Programmatic α Buyback (80%)" row assumes the retired buyback, and streams 1 and 3 depend on VPN exits, a later phase.
+where `min_cut` is the min-cut between the two gateways over verified capacity, `egress` is the egress gateway's measured throughput, and `curve` is a published integer piecewise-linear function that rises as the lane fills. **To be set:** the floor and the minimum purchase are calibrated in `uusd` before mainnet, and the curve breakpoints and `WHOLESALE_SELLABLE_PPM` are PB-49 parameters. None has a value yet.
 
-The economic model (`docs/economics/PIPE_subnet_economic_model.xlsx`, a file named before the rename; benchmarked at `TAO = $279`, `884 TAO` registration cost = `$246,636`) projects four distinct revenue lines over Years 1–3:
+**Clearing** (ADR-0063 §3). Each window's bids clear once, as a uniform-price batch auction per lane, ranked renewals first, then by `max_price`, then by a hash seeded after the cutoff. New fills pay the higher of the curve at final utilization and the highest `max_price` left unfilled for lack of headroom. Renewals pay the higher of the curve and the new-fill price capped at `WHOLESALE_MAX_RENEWAL_STEP_PPM` (proposed 10%) above their previous price. The price-setting unfilled bid forfeits `WHOLESALE_BID_BOND_PPM` (proposed 5%) of its fee. A credit runs one window at a time, with no fixed term.
 
-| Revenue Stream | Buyer Profile | Base Case (Y1 $\to$ Y2 $\to$ Y3) | Bull Case (Y1 $\to$ Y2 $\to$ Y3) |
-| :--- | :--- | :---: | :---: |
-| **1. VPN Partner Backbone Transit** | Crypto-accepting VPN providers (`2 -> 5 -> 10` in Base; `3 -> 10 -> 25` in Bull) | `$192k` $\to$ `$720k` $\to$ **`$1.80M`** | `$540k` $\to$ `$3.00M` $\to$ **`$12.00M`** |
-| **2. Enterprise & AI Cluster SDN** | Multi-site / GPU cluster transit (`2 -> 10 -> 30` in Base; `5 -> 30 -> 100` in Bull) | `$72k` $\to$ `$480k` $\to$ **`$1.80M`** | `$300k` $\to$ `$2.16M` $\to$ **`$9.60M`** |
-| **3. Pay-Per-GB Exit Credits** | Prosumers & power users buying `BandwidthVouchers` (launches Phase 2 / Y2) | `$0` $\to$ `$150k` $\to$ **`$600k`** | `$0` $\to$ `$750k` $\to$ **`$3.00M`** |
-| **4. Global Link-Metric Telemetry** | Latency/jitter/loss matrix sold to WAN monitoring & trading desks | `$50k` $\to$ `$200k` $\to$ **`$500k`** | `$100k` $\to$ `$750k` $\to$ **`$2.00M`** |
-| **Total Annual Customer Revenue** | **All 4 Commercial Lines** | **`$314k` $\to$ `$1.55M` $\to$ `$4.70M`** | **`$940k` $\to$ `$6.66M` $\to$ `$26.60M`** |
-| **Annual Programmatic $\alpha$ Buyback ($80\%$)** | **Direct Market Buy Pressure on $\alpha$** | **`$251k` $\to$ `$1.24M` $\to$ `$3.76M`** | **`$752k` $\to$ `$5.33M` $\to$ `$21.28M`** |
+**A burn is final** (ADR-0063 §3, revision 4). Nothing burned is refunded for unused bytes, a lapse, deregistration or a failed guard. Balance, held in `uusd` and owned by the payer coldkey, comes only from paying above the clearing price, being outbid, rounding remainders and explicit top-ups, and is spent by later bids.
 
-### 6.3 Three-Year Subnet & Operating Company Financial Projections
+**Conversion: quoted in dollars, settled in TAO** (ADR-0065 §3). The card for window $v$ carries one reference, `tao_usd_ref`: the chain's `TaoUsdPrice.accepted` read at the window's first block, in units of $10^9$ per USD. Every validator reads the same value. A burn of `rao` included in window $v$ is credited, rounded in the network's favour, as
 
-> **Note:** this table predates ADR-0063, ADR-0064 and ADR-0065 and is under review. Its buyback row assumes the retired buyback, and its operating-company rows were modelled under the 1.1 assumptions, including the company's 20% protocol fee; under ADR-0063 protocol revenue never passes through the company, which earns only as a reseller.
+$$\text{uusd} = \left\lfloor \frac{\text{rao} \cdot \texttt{tao\_usd\_ref}}{10^{12}} \right\rfloor, \qquad \text{and a fee due in uusd costs} \quad \text{rao} = \left\lceil \frac{\text{uusd} \cdot 10^{12}}{\texttt{tao\_usd\_ref}} \right\rceil .$$
 
-Valuation is modeled as the **Blended Average** of two institutional methodologies:
+*Worked example, with ADR-0065's own reference figure:* at \$211.00, `tao_usd_ref` = `211000000000`. A burn of 1 TAO ($10^9$ rao) is credited $\lfloor 10^9 \cdot 211{,}000{,}000{,}000 / 10^{12} \rfloor$ = `211,000,000` uusd, which is \$211.00. The credit is fixed at inclusion; if TAO moves afterwards, it doesn't change. Resellers carry TAO/USD risk only between buying TAO and burning it, at most two windows. If the oracle is stale for more than `WHOLESALE_ORACLE_MAX_AGE_BLOCKS` (300), the card is *held* at the last fresh reference for up to `WHOLESALE_ORACLE_HOLD_WINDOWS` (3) windows, then *unavailable*. While it is held, new purchases and top-ups aren't credited, but renewals and balance spends continue. Once it is unavailable, only balance spends clear, and renewals that need a burn are suspended, not lapsed. Bittensor's Gamma credits are a later option, adopted only by a new ADR.
 
-1. **Emissions Comparable Multiple:** Subnet annual incentive budget $\times$ comparable Bittensor dTAO market-cap-to-emissions multiples (`2.13x` Bear based on Chutes SN64; `2.69x` Base network average; `3.24x` Bull all-subnet multiple).
-2. **Infrastructure Revenue Multiple:** Annual commercial revenue $\times$ infrastructure multiple (`10x` Bear, `15x` Base, `20x` Bull).
+*A real burn on testnet 611* (ADR-0063, 2026-11-11): a coldkey that is not the subnet owner sent one `batch_all` of `add_stake_burn` and a remark. It put 10,000,000 rao (0.01 TAO) into the pool, bought and burned 77,214,706 alpha, moved spot from 0.129362 to 0.129526 TAO per alpha, and paid a transaction fee of 993,533 rao (about 0.001 TAO, fixed per purchase).
 
-| Metric | Bear (Y1 / Y2 / Y3) | Base (Y1 / Y2 / Y3) | Bull (Y1 / Y2 / Y3) |
-| :--- | :---: | :---: | :---: |
-| **Network Emission Share** | `0.20%` / `0.30%` / `0.40%` | `0.60%` / `1.00%` / `1.50%` | `1.50%` / `3.00%` / `5.00%` |
-| **Bonded Transit Capacity** | `20` / `40` / `60 Gbps` | `100` / `300` / **`800 Gbps`** | `300` / `1,500` / **`5,000 Gbps`** |
-| **Subnet Incentive Budget (`$/yr`)** | `$0.73M` / `$1.10M` / `$1.47M` | `$2.20M` / `$3.67M` / **`$5.50M`** | `$5.50M` / `$11.00M` / **`$18.33M`** |
-| **Miner Capacity Pay (`$/Mbps/mo`)** | `$1.00` / `$0.66` / `$0.50` | `$0.53` (`3.5x`) / `$0.21` / `$0.09` | `$0.38` (`2.5x`) / `$0.10` / `$0.04` |
-| **Total Commercial Revenue (`$/yr`)** | `$36k` / `$169k` / `$375k` | `$314k` / `$1.55M` / **`$4.70M`** | `$940k` / `$6.66M` / **`$26.60M`** |
-| **Programmatic $\alpha$ Buyback (`$/yr`)** | `$28.8k` / `$135.2k` / `$300k` | `$251.2k` / `$1.24M` / **`$3.76M`** | `$752k` / `$5.33M` / **`$21.28M`** |
-| **Subsidy Ratio (Emissions / `$1` Rev)** | `20.37x` / `6.51x` / `3.91x` | `7.01x` / `2.37x` / **`1.17x`** | `5.85x` / `1.65x` / **`0.69x`** |
-| **Subnet Market Cap — Blended (`$`)** | `$0.96M` / `$2.02M` / **`$3.44M`** | `$5.31M` / `$16.55M` / **`$42.64M`** | `$18.31M` / `$84.42M` / **`$295.70M`** |
-| **Registration Payback Period** | `22.4 months` (Y1) | **`7.5 months` (Y1)** | **`3.0 months` (Y1)** |
-| **Operating Co. Gross Income (`$/mo`)** | `$17.2k` / `$25.9k` / `$34.5k` | `$51.8k` / `$90.9k` / **`$166.5k`** | `$114.4k` / `$270.9k` / **`$678.6k`** |
-| **Operating Co. Net Income (`$/mo`)** | `-$22.8k` / `-$24.1k` / `-$25.5k` | `-$8.2k` / `-$9.1k` / **`+$16.5k`** | `+$34.4k` / `+$90.9k` / **`+$328.6k`** |
-| **Operating Co. Valuation (Treasury + OpCo)** | `$0.13M` / `$0.27M` / **`$0.47M`** | `$0.49M` / `$1.52M` / **`$5.91M`** | `$6.20M` / `$18.81M` / **`$67.32M`** |
+**Guards for alpha holders** (ADR-0063 §3a; values from the OQ-291 replay of 8 young mainnet subnets, `docs/economics/oq-291-guard-calibration.md`). The protocol can't stop anyone's burn; it controls what it credits, and a burn that fails a guard is forfeited, never refunded, so evading a guard never pays. New purchases and top-ups face every guard; renewals face only the short-horizon band, the slippage cap and the size cap, so customers already served can't be cut off by a multi-day trend.
+
+| Guard | Parameter | Value |
+| :--- | :--- | :--- |
+| Reference price: median spot over about 7 days, sampled at blocks chosen after each window | `WHOLESALE_REF_WINDOWS` / `WHOLESALE_REF_SAMPLES_PER_WINDOW` | 140 windows / 4 (proposed) |
+| Price band: a purchase's `limit` at most this far above the reference | `WHOLESALE_PRICE_BAND_PPM` | 25% (from OQ-291; was 15%) |
+| Volatility gate: closes new purchases when the p90–p10 spread over the reference exceeds it | `WHOLESALE_MAX_VOL_PPM` | 40% (from OQ-291; was 30%) |
+| Short-horizon band: execution price over the 50-block median | `WHOLESALE_SHORT_BAND_PPM` / `WHOLESALE_SHORT_REF_BLOCKS` | 5% / 50 blocks (proposed) |
+| Slippage cap: execution over the simulated swap at the parent block | `WHOLESALE_MAX_SLIPPAGE_PPM` | 2% (proposed) |
+| Size cap: one extrinsic's burns as a share of the pool's TAO reserve | `WHOLESALE_MAX_BURN_PPM` | 1% (proposed, calibrated on testnet) |
+| Notice before any economic parameter, the floor or the curve changes | `WHOLESALE_PARAM_NOTICE_WINDOWS` | 600 windows (about 30 days) |
+
+The OQ-291 replay found that at 25%/40% the guard for new purchases was closed in about 14% of windows over a subnet's first 90 days, and about 7% over days 30 to 90, while still closing 92% of windows that jumped more than 25% above the previous day's median. A subnet's launch month stays about 37% closed under any setting; resellers ride that out on a balance buffer (ADR-0064 §6).
+
+**The burn ledger** (ADR-0063 §3b). Each window, validators publish one row per burn (payer, TAO in, alpha burned, outcome) and two identities anyone can recompute from the chain: TAO burned = credited + balance created + forfeited + held pending, and credited + balance spent = value of windows held. The company's own wholesale coldkeys are listed in it.
+
+**One disclosed asymmetry** (ADR-0063 §1, red team L1). Every reseller pays the same clearing price, but a buyer that holds alpha gets back part of its fee through the price rise its own purchase causes. Every buyback works this way; it is disclosed, not fixed.
+
+### 6.3 What BandwidthOS earns, and what nobody earns (ADR-0063 §6, ADR-0064)
+
+- **The protocol earns nothing.** It holds no money and charges no fee. The fabric fee is burned.
+- **Gateways** earn their port fees, paid straight to their registered coldkeys window by window, plus emissions like any node.
+- **Nodes, solvers and validators** earn emissions only (§6.1).
+- **BandwidthOS earns a reseller's margin, and nothing from the protocol.** It pays the clearing price like every reseller and gets no early access to parameters or data. Protocol revenue never passes through it. For each window, its margin is
+
+  $$\text{margin} = \text{retail revenue} - \sum_{\text{credits}} \text{fabric fee} - \sum_{\text{credits}} \text{port fees} - \text{its own costs}$$
+
+  where the fabric fee and port fees are set by the card's clearing prices, and its own costs include buying TAO and the transaction fee on each purchase. None of these terms has a published value yet, so the paper gives no figure for it. Under its published treasury policy (ADR-0064 §6, ADR-0063 §6), its alpha comes only from retail margin and sits on hotkeys that never set weights; its holdings are disclosed quarterly; it keeps a balance buffer of a set number of windows; it sells no alpha within `N` windows (proposed 140, about 7 days) of its own wholesale purchases, and at most 5% a month on an announced schedule. Any corporate buyback it chooses to run is kept out of the fabric burn ledger. Nodes BandwidthOS may run are a reference deployment and are paid like anyone's (§7.2); how that pay sits with the treasury rule is open (OQ-301).
+
+**What the old projections covered and the current model doesn't.** The 1.1 model's VPN backbone and pay-per-GB exit revenue depend on exits, a later phase. The telemetry feed (§7.1) has no settlement path in ADR-0063. The repository's historical economic model still assumes the retired buyback and company fee, so this section uses only its emission inputs.
 
 ---
 
 ## 7. BandwidthOS, the Model Home: Commercial Operations & Go-To-Market Workflows
 
-> **Version 1.2 note (ADR-0062, ADR-0064).** Transit Fabric is the open protocol and network; it is not a business. **BandwidthOS** is the one company the founder runs around it: the first reseller and first gateway, run in public as a working example anyone can copy. Everything it runs to operate (sign-up and accounts, billing adapter, TAO procurement, wholesale buying, voucher issuance, the customer dashboard, gateway operation and runbooks) is published as an open-source reference reseller under Apache-2.0. It has **no protocol privilege**: it pays the clearing price like every reseller, gets no early access to parameters or data, and gets no peering advantage. It competes on operations, support and brand. Whether the company is an Inc. or an LLC is not yet decided. Nothing in this section is built yet: wholesale is PB-49, the reference reseller PB-50, gateways PB-39.
+> **Version 1.2 note (ADR-0062, ADR-0064).** Transit Fabric is the open protocol and network; it is not a business. **BandwidthOS** is the one company the founder runs around it: the first reseller and first gateway, run in public as a working example anyone can copy. Everything it runs to operate (sign-up and accounts, billing adapter, TAO procurement, wholesale buying, voucher issuance, the customer dashboard, gateway operation and runbooks) is published as an open-source reference reseller under Apache-2.0. It has **no protocol privilege**: it pays the clearing price like every reseller, gets no early access to parameters or data, and gets no peering advantage. It competes on operations, support and brand. It earns a reseller's margin, never protocol revenue (§6.3). Whether the company is an Inc. or an LLC is not yet decided. Nothing in this section is built yet: wholesale is PB-49, the reference reseller PB-50, gateways PB-39.
 
 ### 7.1 Market Positioning: Programmable NaaS & Middle-Mile SD-WAN
 While the Transit Fabric Bittensor subnet provides the decentralized incentive, measurement, and settlement layer, enterprise buyers, AI cloud operators, and commercial VPN providers need a standard commercial counterparty. Under ADR-0063 any reseller can be that counterparty on the same terms; **BandwidthOS** is the first. It positions itself as **Programmable Network-as-a-Service (NaaS) and Middle-Mile SD-WAN**, at the market intersection of **Megaport / PacketFabric** (elastic inter-datacenter transit) and **Cloudflare Magic WAN / Argo** (real-time latency/jitter-optimized routing), backed by the fabric's open supply.
@@ -467,21 +488,21 @@ A reseller can sell two core products and, later, two by-products:
 3. **Turnkey Multi-Region VPN Exit & Edge Access, later phase:** Wholesale and retail exit access via registered Exit Partners (`ADR-0004`) authorized by `BandwidthVouchers`, which are commercial only.
 4. **Global Link-Metric Telemetry Feed, planned:** pairwise latency, jitter, packet loss, and link-saturation matrices from validator measurement, for trading desks, CDNs, and WAN observability platforms.
 
-### 7.2 Anchor Nodes in Interconnect Hubs (later phase, under review)
+### 7.2 BandwidthOS Nodes: a Reference Deployment (planned)
 
-> **Version 1.2 note.** Version 1.1 had the company deploy "Anchor Core Routers" that acted as the fabric's ingress gateways, route reflectors and peering hubs. That conflicts with ADR-0064 §4 (no protocol privilege) and with the peering design, under which no node or company chooses the topology (§2.3, §4.2.1). The fabric is flat eBGP with no route reflectors. This section now keeps only what any operator could do, and the projection below is under review.
+> **Version 1.3 note (founder, 2026-11-13; ADR-0064 §8).** This replaces 1.1's company-owned "Anchor Core Routers" and 1.2's hub-node text, including its projection of capacity pay against hub transit cost, which rested on the retired `ALPHA`.
 
-To ease the two-sided cold start, BandwidthOS, or any operator, may run kernel-tuned nodes (bare-metal 10G/25G/100G servers running `bwos-node`, FRRouting `bgpd`/`bfdd`, WireGuard, and the `bwos-node tune-host` `FQ/BBR` offload profile) in major interconnect hubs (for example `IAD` Ashburn, `ORD` Chicago, `DFW` Dallas, `SJC` Silicon Valley, `FRA` Frankfurt, `AMS` Amsterdam, `LHR` London, and `NRT` Tokyo). Such nodes:
+BandwidthOS may run nodes, but only as a **reference implementation**: open-source code and a public example that others copy, so they can run nodes and resell as well. Its nodes:
 
-- **Add early capacity and reach** across continents before third-party node density reaches scale.
-- **Are measured and paid like any other node,** under the same Mechanism 0 rules, and peer through the same self-service process today and the same draw and plans later. They are not ingress gateways unless registered as gateways under ADR-0052's published criteria, which any datacenter operator can meet.
-- **Projection from the 1.1 model (under review):** with `ALPHA = 700,000` ppm, the 1.1 model had hub nodes earning `$0.53 / Mbps / month` from Mechanism 0 capacity emissions against a `$0.15 / Mbps / month` wholesale hub transit cost (`3.51x` coverage in Year 1). `ALPHA` was retired by ADR-0053.
+- **Run the same open-source stack as anyone's** (for a kernel node: `bwos-node`, FRRouting `bgpd`/`bfdd`, WireGuard and the `bwos-node tune-host` `FQ/BBR` profile), and how they are deployed is published with the rest of the reference implementation (ADR-0064 §3).
+- **Get no protocol privilege** (ADR-0064 §4). They are measured, paid and peered under the same Mechanism 0 rules as every node: self-service peering today, the draw and solver peering plans later (§2.3, §4.2.1). They hold no special role: not an anchor, an ingress point, a route reflector or a peering hub. The fabric is flat eBGP with no route reflectors, and no node or company chooses the topology. A BandwidthOS node is a gateway only if it registers as one under ADR-0052's published criteria, which any datacenter operator can meet.
+- **Earn emissions like any operator's.** How that pay sits with BandwidthOS's treasury rule, that its alpha comes only from retail margin, is open (OQ-301).
 
 Today on testnet, the team runs public nodes that peer with testers' nodes on request (§2.3), and every validator on subnet 611 is the team's own until outside validators join.
 
 ### 7.3 Transaction Clearing & Settlement Workflow (Fiat/USDC to a TAO Burn)
 
-> **Version 1.2 note (ADR-0063, ADR-0065):** this replaces the 1.1 workflow, in which the company kept 20% of revenue and bought alpha with 80%. Proposed details, pending a red team; not built (PB-49, PB-39).
+> **Version 1.2 note (ADR-0063, ADR-0065):** this replaces the 1.1 workflow, in which the company bought alpha with customer revenue. Proposed details, pending a red team; not built (PB-49, PB-39).
 
 Enterprise customers never need to custody TAO or $\alpha$ or manage Subtensor hotkeys. A reseller such as BandwidthOS clears transactions end-to-end:
 
@@ -490,21 +511,22 @@ Enterprise customers never need to custody TAO or $\alpha$ or manage Subtensor h
 3. **Credit and Quota Issuance (`BandwidthVoucher`):** Validators read the purchase from the chain and publish the credit. The reseller issues `BandwidthVouchers` (`domain: "bandwidth-voucher"`) scoped to its customer's keys, which the lane's gateways meter and enforce.
 4. **Per-Window Renewal and Port Fees:** A credit runs one window at a time, renewed by further bids, and each window's port fee is paid in TAO straight to each lane gateway's registered coldkey.
 5. **Miner Payouts Through Emissions:** Validators never pay miners from receipts or vouchers: nodes and solvers are paid in $\alpha$ emissions from measured capacity, availability and, once scored, canary carriage, every 360-block tempo. Customer money reaches them through the burn's effect on the subnet's pool, with no accounts-payable process across hundreds of independent operators.
+6. **The Reseller's Margin:** What the reseller keeps is its customer revenue less the fabric fees it burned, the port fees it paid and its own costs (§6.3).
 
 ---
 
 ### 7.4 Go-To-Market Sequences & End-to-End User Stories
 
-> **Version 1.2 note.** These sequences are illustrative, with fictional names, and were written for 1.1. Their dollar figures are unchanged and under review. Where a step relied on company-owned anchor routers with special roles or on the 80/20 buyback, it now follows ADR-0063 and ADR-0064, and the 1.1 figure is kept in the text. Sequence 3's appliance and all of Sequence 4 are later phases.
+> **Version 1.3 note.** These sequences are illustrative, with fictional names, and were first written for 1.1. Their contract figures stand. Where a step relied on company-owned anchor routers or on the retired buyback, it follows ADR-0063 and ADR-0064, and 1.3 removes the 1.1 figures that rested on the buyback or on `ALPHA` (§6). Sequence 3's appliance and all of Sequence 4 are later phases.
 
-#### Sequence 1 (Beachhead 1 — Months 1–6): Hub Nodes & Onboarding VPN Providers
+#### Sequence 1 (Beachhead 1 — Months 1–6): Reference Nodes & Onboarding VPN Providers
 * **Actors:** **BandwidthOS** (the first reseller and gateway), **Lantern VPN** (a 40-city crypto-accepting commercial VPN provider), and **Ridgeline Hosting** (a regional colocation operator with 6 Gbps of idle 95th-percentile transit headroom).
 * **End-to-End Workflow:**
-  1. **Hub Nodes:** BandwidthOS brings online 6 nodes (`100 Gbps` aggregate commit) in Ashburn, Chicago, Frankfurt, Amsterdam, Dallas, and Tokyo, measured and paid like anyone's. In the 1.1 model (under review), Mechanism 0 capacity emissions (`$0.53/Mbps/mo`) cover the wholesale transit commit (`$0.15/Mbps/mo`) by `3.5x`.
+  1. **Reference Nodes:** BandwidthOS brings online 6 nodes (`100 Gbps` aggregate commit) in Ashburn, Chicago, Frankfurt, Amsterdam, Dallas, and Tokyo as a reference deployment (§7.2): open source, published for others to copy, and measured and paid like anyone's.
   2. **Pilot Onboarding:** BandwidthOS onboards **Lantern VPN** onto a 30-day pilot. Lantern runs `bwos-node` on 10 of its busiest ingress/exit servers, which peer into the fabric by the same process as every node.
   3. **Cryptographic SLA Proof (`PartnerPilotReport`):** Over 4 weeks, validators probe every route and BandwidthOS generates an automated weekly `PartnerPilotReport` (`crates/bwos-core/src/validator.rs`) comparing Lantern's middle-mile traffic over Transit Fabric (`realtime` and `low_latency_hd` classes) against direct public BGP—demonstrating a `20–35%` reduction in transatlantic p95 RTT and jitter and sub-300 ms BFD failover during carrier brownouts.
   4. **Dual-Role Conversion (Customer + Exit Partner):** Lantern signs a `$10,000/month` commercial backbone contract with BandwidthOS (paid in USDC/USD) to carry inter-city VPN traffic over Transit Fabric, **and**, in a later phase, registers its 40 regional servers as Transit Fabric **Exit Partners** (`ADR-0004`).
-  5. **Demand Reaches the Subnet:** BandwidthOS buys the wholesale lanes Lantern's traffic needs by burning TAO at the rate card's clearing price (§7.3). (The 1.1 text routed `$8,000/month`, `80%`, into programmatic $\alpha$ buybacks; that split is retired and the figure is under review.) Seeing the subnet's emissions and demand, **Ridgeline Hosting** registers a Mechanism 0 UID, peers its 3 Gbps idle commit into the fabric, and earns capacity emissions. Lantern's paid traffic itself earns no one anything (ADR-0053).
+  5. **Demand Reaches the Subnet:** BandwidthOS buys the wholesale lanes Lantern's traffic needs by burning TAO at the rate card's clearing price (§7.3). How much of Lantern's `$10,000/month` is burned depends on the card's clearing prices and port fees, which aren't set yet (§6.2); the rest is BandwidthOS's margin and costs (§6.3). Seeing the subnet's emissions and demand, **Ridgeline Hosting** registers a Mechanism 0 UID, peers its 3 Gbps idle commit into the fabric, and earns capacity emissions. Lantern's paid traffic itself earns no one anything (ADR-0053).
 
 #### Sequence 2 (Beachhead 2 — Months 3–9): Distributed AI / Neo-Cloud GPU Cluster Interconnects
 * **Actors:** **TensorForge Cloud** (a distributed GPU provider operating H100/B200 clusters across Illinois, North Carolina, and Eastern Europe) and **Mechanism 1 Route Solvers**.
@@ -512,7 +534,7 @@ Enterprise customers never need to custody TAO or $\alpha$ or manage Subtensor h
   1. **Problem:** TensorForge must synchronize 250 GB model checkpoints every hour between regional datacenters and stream low-latency token inference across nodes, but public BGP suffers from single-path TCP congestion and hyperscale cloud egress fees are prohibitive.
   2. **Peering & QoS Tagging:** TensorForge deploys `bwos-node` on its border gateways (`bwos-node tune-host -if eth0` enabling 64 MB socket buffers, `fq` pacing, and `BBR`), reaches the fabric through a registered gateway (ADR-0052), and tags checkpoint replication as `class = "bulk"` ($80\%$ bottleneck bandwidth / $20\%$ latency) and inference streams as `class = "realtime"` ($\le 5\text{ ms}$ jitter).
   3. **Capacity-Aware Solver Execution:** Mechanism 1 solvers (`routing::solve_capacity_aware`) compute multi-commodity flow tables that strip out congested links using quadratic congestion pricing (`CONGESTION_SURCHARGE_PPM`) and stripe TensorForge's bulk transfers across parallel Mechanism 0 transit paths.
-  4. **Clearing:** TensorForge pays BandwidthOS a monthly commit + per-TB burst fee in USD; BandwidthOS buys the lanes by burning TAO and issues `BandwidthVouchers` (§7.3). (The 1.1 text cleared `80%` of revenue into $\alpha$ buybacks; retired.)
+  4. **Clearing:** TensorForge pays BandwidthOS a monthly commit + per-TB burst fee in USD; BandwidthOS buys the lanes by burning TAO and issues `BandwidthVouchers` (§7.3).
 
 #### Sequence 3 (Beachhead 3 — Months 6–18): Enterprise HA WAN (`resilient`) & Telemetry Data Buyers
 * **Actors:** **Coastline Labs** (an enterprise linking three offices and a private compute cage) and **QuantPulse** (a low-latency financial infrastructure desk).
@@ -615,7 +637,7 @@ We deployed `bwos-node` across three live cloud datacenter regions—**US-Centra
 | `SENSE_MAX_RUNS_PER_DAY` | `3` | System One runs a skill at most this often per symptom code in 24 hours, then escalates (ADR-0067) |
 | `FAULT_REPORTS_PER_WINDOW` | `4` | Most fault reports a node may send per window; validators' stores drop the rest (ADR-0067) |
 
-Peering parameters (`PEER_CHANGES_PER_WINDOW`, `PEER_EXPLORE`, `PEER_SUSPEND_WINDOWS`, the draw size and `MAX_PEERS`) and wholesale parameters (ADR-0063, ADR-0065) are set by their ADRs and are not yet fixed.
+Peering parameters (`PEER_CHANGES_PER_WINDOW`, `PEER_EXPLORE`, `PEER_SUSPEND_WINDOWS`, the draw size and `MAX_PEERS`) are set by their ADRs and are not yet fixed. Wholesale parameters (ADR-0063, ADR-0065) are proposed; §6.2 lists the guard values, and the floor, curve and minimum purchase are calibrated before mainnet.
 
 ---
 
