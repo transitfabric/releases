@@ -1,5 +1,5 @@
 # Adds labels an Issue form can't add on its own: `agent-filed` when the "Filed by an agent" box
-# is ticked on a Finding, and `finding` / `bounty-registration` from the form's own heading, in
+# is ticked on a Bug report or a Finding, and `finding` / `bounty-registration` from the form's own heading, in
 # case the filer lacks permission to set labels. The Issue text is read from an environment
 # variable and only compared, never run.
 name: issue-labels

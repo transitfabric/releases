@@ -1,0 +1,15 @@
+{
+  "name": "transitfabric",
+  "owner": {
+    "name": "Transit Fabric",
+    "url": "https://transitfabric.xyz"
+  },
+  "plugins": [
+    {
+      "name": "transit-fabric",
+      "source": "./plugins/transit-fabric",
+      "description": "Install, run, diagnose and report bugs on a Transit Fabric testnet node (subnet 611) safely: checksum first, hand binding to the human, bwos doctor and bwos report.",
+      "version": "0.1.0-tester.3"
+    }
+  ]
+}
