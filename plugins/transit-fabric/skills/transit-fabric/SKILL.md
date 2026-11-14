@@ -1,9 +1,9 @@
 ---
 name: transit-fabric
-description: Use when the user wants to install, run, check or troubleshoot a Transit Fabric node on Bittensor testnet subnet 611, interpret `bwos doctor` output, or file a bug report for Transit Fabric (tester v0.1.0-tester.3). Testnet only. Covers verifying downloads, handing key and binding steps to the human, System One (fabric-sense), and filing an Issue.
+description: Use when the user wants to install, run, check or troubleshoot a Transit Fabric node on Bittensor testnet subnet 611, interpret `bwos doctor` output, or file a bug report for Transit Fabric (tester v0.1.0-tester.3.1). Testnet only. Covers verifying downloads, handing key and binding steps to the human, System One (fabric-sense), and filing an Issue.
 ---
 
-# Transit Fabric testnet (tester v0.1.0-tester.3)
+# Transit Fabric testnet (tester v0.1.0-tester.3.1)
 
 Transit Fabric is a network fabric run as a Bittensor subnet. This release is on **testnet, subnet 611** only. The command-line tools are named `bwos`. System One (`fabric-sense`) is the node's watchdog sidecar.
 

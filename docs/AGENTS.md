@@ -1,8 +1,8 @@
-# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.3)
+# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.3.1)
 
 For AI agents working on behalf of a tester. Humans: start at https://transitfabric.xyz/quickstart.html. A shorter index in the llms.txt format is at https://transitfabric.xyz/llms.txt.
 
-Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.3** as it is today. The command-line tools are still named `bwos`.
+Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.3.1** as it is today. The command-line tools are still named `bwos`.
 
 **New in tester.3:** `bwos doctor --json`, `bwos report` and an agent skill. Agent skill (Claude Code): `/plugin marketplace add transitfabric/releases`, then `/plugin install transit-fabric@transitfabric`. The bounty opens soon. Reports are welcome now, filed the same way.
 
