@@ -1,0 +1,65 @@
+# Hourly, welcomes new testers on Bittensor testnet subnet 611 in the Transit
+# Fabric Discord and notes a UID's first incentive. Read-only on the testnet:
+# nothing is signed or submitted, and mainnet is refused. The last-seen
+# metagraph is kept between runs with actions/cache. The first run, or a lost
+# cache, posts nothing and only records the state. Mentions are disabled and
+# links aren't expanded.
+name: uid-welcome
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Print the messages instead of posting them (state is not saved)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uid-welcome
+  cancel-in-progress: false
+
+jobs:
+  welcome:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.4.0
+        with:
+          python-version: "3.12"
+      - name: Install the substrate client
+        run: pip install --no-cache-dir -r tools/uid-welcome/requirements.txt
+      - name: Restore last state
+        uses: actions/cache/restore@v4.2.0
+        with:
+          path: uid-state.json
+          key: uid-welcome-state-${{ github.run_id }}
+          restore-keys: uid-welcome-state-
+      - name: Welcome new UIDs
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          FIRST_PARTY_COLDKEYS: ${{ secrets.FIRST_PARTY_COLDKEYS }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          # Keep the webhook and the first-party list out of the log.
+          [ -z "$DISCORD_WEBHOOK" ] || echo "::add-mask::$DISCORD_WEBHOOK"
+          IFS=',' read -ra keys <<< "${FIRST_PARTY_COLDKEYS:-}"
+          for k in "${keys[@]}"; do
+            k=$(echo "$k" | tr -d '[:space:]')
+            [ -z "$k" ] || echo "::add-mask::$k"
+          done
+          args=(--state uid-state.json)
+          [ "$DRY_RUN" != "true" ] || args+=(--dry-run)
+          python tools/uid-welcome/uid_welcome.py "${args[@]}"
+      - name: Save state
+        if: inputs.dry_run != true
+        uses: actions/cache/save@v4.2.0
+        with:
+          path: uid-state.json
+          key: uid-welcome-state-${{ github.run_id }}

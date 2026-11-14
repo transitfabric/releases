@@ -31,3 +31,7 @@ Without npx: `cd tools && npm ci && node verify-claim.mjs --claim claim.txt`.
 npx -y -p @polkadot/util-crypto@14.0.3 -p @polkadot/util@14.0.3 -p @polkadot/keyring@14.0.3 \
   node tools/verify-claim.mjs --self-test
 ```
+
+## uid-welcome
+
+`tools/uid-welcome/uid_welcome.py` is the hourly `uid-welcome` workflow: it reads the metagraph of testnet subnet 611 (read-only, `substrate-interface` pinned in `requirements.txt`, mainnet refused), compares it with the last state kept in `actions/cache`, and welcomes new UIDs and first incentives in the Discord announcements channel. Secrets: `DISCORD_WEBHOOK`, `FIRST_PARTY_COLDKEYS` (comma-separated SS58, never printed). Test: `cd tools/uid-welcome && python3 -I -m unittest`.
