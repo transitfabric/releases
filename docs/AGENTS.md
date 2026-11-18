@@ -1,10 +1,12 @@
-# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.4.2)
+# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.4.3)
 
 For AI agents working on behalf of a tester. Humans: start at https://transitfabric.xyz/quickstart.html. A shorter index in the llms.txt format is at https://transitfabric.xyz/llms.txt.
 
-Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.4.2** as it is today. The command-line tools are still named `bwos`.
+Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.4.3** as it is today. The command-line tools are still named `bwos`.
 
-**New in tester.4.2:** tester.4.2 is a small hotfix for validators only: a validator now holds back a weight commit that would land within 8 blocks of the next epoch, so every validator's commit lands in the same reveal epoch (no scoring change). Nodes and solvers don't need to update.
+**New in tester.4.3:** tester.4.3 is a fix for validators and for anyone running a shadow validator: validators and shadows now get the commitment manifests that nodes forward promptly (before, they arrived a window or more late and shadows could never reach MATCH on Mechanism 0), two-source chain reads tolerate up to 6 blocks of lag without flapping, and the epoch-guard wait follows the best block. No scoring change. Nodes and solvers don't need to update; container operators still on old arguments should recreate the container, not just restart it.
+
+**From tester.4.2:** tester.4.2 is a small hotfix for validators only: a validator now holds back a weight commit that would land within 8 blocks of the next epoch, so every validator's commit lands in the same reveal epoch (no scoring change). Nodes and solvers don't need to update.
 
 **From tester.4.1:** tester.4.1 is mostly for validators: the subnet owner's on-chain validator allowlist (ADR-0078), parsed from testnet block 8,481,240 (about 2026-11-19 19:40 UTC, report-only) and in force from block 8,495,640 (about 2026-11-21 19:40 UTC), and two-source chain reads that tolerate a lagging source. For anyone: shadow mode (`bwos-validator shadow`) recomputes the validators' weights from public data; a `MISMATCH` is bounty-eligible (https://transitfabric.xyz/redteam/shadow-validator.html). Nodes need no change; upgrading `fabric-sense` before block 8,495,640 keeps a node's anchor rebuild identical to the validators' chain-only set.
 
@@ -12,7 +14,7 @@ Transit Fabric is a Bittensor subnet for a decentralized network fabric, running
 
 ## Where things are
 
-- Release and downloads: https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.4.2. Binaries are for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `bwos-solver`, `bwos-validator`, `minimal_solver`), plus a no-root container image, router images and `install.sh`. The `bwos` CLI also ships for macOS, and the link page for any OS.
+- Release and downloads: https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.4.3. Binaries are for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `bwos-solver`, `bwos-validator`, `minimal_solver`), plus a no-root container image, router images and `install.sh`. The `bwos` CLI also ships for macOS, and the link page for any OS.
 - Checksums: the `SHA256SUMS` asset on the release. `MANIFEST.json` has the commit and the file list. `latest.json` (a release asset) lists the version, every asset's sha256 and url, the hash of `SHA256SUMS` and the validator set's `validator_set_not_after_block`. It comes from the same place as the files, so it does not replace comparing `SHA256SUMS` with the announced hash.
 - Quick start: https://transitfabric.xyz/quickstart.html. Also the `QUICKSTART.md` and `testers.md` assets. Read the quick start before you act.
 - Known limits: https://transitfabric.xyz/known-limits.html.

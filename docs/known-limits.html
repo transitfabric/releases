@@ -4,7 +4,7 @@
 <header><a class="brand" href="index.html">Transit Fabric releases</a>
 <nav><a href="index.html">Home</a><a href="https://dashboard.transitfabric.xyz/">Network dashboard</a><a href="quickstart.html">Quick start</a><a href="known-limits.html">Known limits</a><a href="bounty.html">Bounty</a><a href="redteam/index.html">Red team</a><a href="claim.html">Claim credit</a><a href="leaderboard.html">Leaderboard</a><a href="testnet-rules.html">Testnet rules</a><a href="operator-guide.html">Operator guide</a><a href="faq.html">FAQ</a></nav></header>
 <main>
-<h1>Known limits: v0.1.0-tester.4.2</h1>
+<h1>Known limits: v0.1.0-tester.4.3</h1>
 <p>A point release of the fourth build for outside testers, on <strong>Bittensor testnet, subnet 611</strong>. Please read these before you report a bug. They are known, and most have a task to fix them.</p>
 <h2>What is in it</h2>
 <ul>
@@ -32,7 +32,7 @@
 <li><strong>No customer traffic.</strong> Nodes carry only other nodes' overlay traffic and validators' test traffic. There is no VPN exit, and nothing goes out to the public internet.</li>
 <li><strong>Peering is self-service, with limits.</strong> A node is paid for capacity only with a BGP session to a node of another UID, and Transit Fabric doesn't assign peers yet. Our public node in <code>network.json</code>'s <code>transit_peers</code> adds your node by itself once you post your peer card in a "Peering request" Issue and validators list your node (testers.md section 5). It takes one node per UID and sixteen testers' nodes in all, first come. You can also swap cards with another tester. Two nodes both behind NAT can't peer, because there's no hole punching yet.</li>
 <li><strong>Router nodes aren't measured yet.</strong> The router package has no probe sessions, so a router node can peer and carry traffic, but validators can't measure or pay it, and it has no System One.</li>
-<li><strong>Mac: the <code>bwos</code> CLI only, unsigned.</strong> <code>bwos-macos-universal-v0.1.0-tester.4.2.tar.gz</code> (Intel and Apple silicon) links nodes and declares capacity from a Mac. If Gatekeeper blocks it, run <code>xattr -d com.apple.quarantine bwos</code>. Nodes run on Linux. There are no Windows binaries; Windows users link nodes with the link page. <code>btcli</code> works everywhere.</li>
+<li><strong>Mac: the <code>bwos</code> CLI only, unsigned.</strong> <code>bwos-macos-universal-v0.1.0-tester.4.3.tar.gz</code> (Intel and Apple silicon) links nodes and declares capacity from a Mac. If Gatekeeper blocks it, run <code>xattr -d com.apple.quarantine bwos</code>. Nodes run on Linux. There are no Windows binaries; Windows users link nodes with the link page. <code>btcli</code> works everywhere.</li>
 <li><strong>The probe agents are listed by hand.</strong> <code>network.json</code> lists each validator's probe agent, and nodes don't yet read them from the signed validator set. If we add or move a validator, we'll publish a new <code>network.json</code>.</li>
 <li><strong>A solver starts from a current set.</strong> A node builds its own at first start, but a solver doesn't yet: if the release's <code>validator-set.json</code> is more than about a day old, build a current one first (testers.md section 9). The node's stats show the set it holds (<code>set_block</code>, <code>set_not_after</code>).</li>
 <li><strong>Releases aren't signed yet.</strong> Check <code>SHA256SUMS</code> against the hash we announce by a second route.</li>
