@@ -18,12 +18,15 @@
 <label for="gh">GitHub username (a GitHub account is required for credit)</label>
 <input id="gh" type="text" autocomplete="off" spellcheck="false" maxlength="39" placeholder="octocat">
 
-<h2>2. Connect a wallet</h2>
+<h2>2. Connect a wallet, or type your address</h2>
 <p>This uses a browser wallet extension that supports the Polkadot{.js} extension API (the Polkadot{.js} extension, Talisman, SubWallet and others).</p>
 <button class="btn" id="connect" type="button">Connect wallet</button>
 <label for="acct">Account</label>
 <select id="acct" disabled><option value="">No wallet connected</option></select>
 <p id="status" role="status"></p>
+<label for="addr">No browser wallet? Type the address you will sign with</label>
+<input id="addr" type="text" autocomplete="off" spellcheck="false" maxlength="60" placeholder="5..." aria-describedby="addrhelp">
+<p id="addrhelp">A typed address is used instead of the wallet account. The page can't sign for it: sign the message from step 4 with <a href="#btcli-way">btcli</a> and paste the signature below the message.</p>
 
 <h2>3. Confirm your age and the terms</h2>
 <label class="check" for="age"><input id="age" type="checkbox"> I am 18 or older, or the age of majority where I live, whichever is higher, and I accept the <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a> (version <span id="termsv">1</span>).</label>
@@ -32,6 +35,9 @@
 <label for="msg">The exact message you will sign</label>
 <textarea id="msg" rows="3" readonly></textarea>
 <button class="btn" id="sign" type="button" disabled>Sign message</button>
+<label for="sig">Signed with btcli? Paste the signature</label>
+<input id="sig" type="text" autocomplete="off" spellcheck="false" maxlength="400" placeholder="The signature btcli printed" aria-describedby="sighelp" disabled>
+<p id="sighelp">Fill in steps 1 to 3 first. The page checks the signature and shows the result in step 5.</p>
 
 <h2>5. Send your claim</h2>
 <label for="claim">Claim block</label>
@@ -41,8 +47,8 @@
 <a class="btn" id="issue" href="#" hidden rel="noopener">Open a prefilled Issue</a>
 <p>The button opens a new Issue titled "Bounty registration" with these fields filled in. You need to be signed in to GitHub. Anyone can read it, and it holds only the message, your public address and the signature. If you want it private, paste the claim block into a <a href="https://github.com/transitfabric/releases/security/advisories/new">private advisory</a> instead.</p>
 
-<h2>Sign with btcli instead</h2>
-<p>If you'd rather not use a browser wallet, <code>btcli</code> can sign the same message. It carries the same age attestation, so sign it only if it is true for you. This was checked with btcli 9.23.2. Run <code>btcli wallet sign --help</code> to see the options in your version.</p>
+<h2 id="btcli-way">Sign with btcli instead</h2>
+<p>If you'd rather not use a browser wallet, <code>btcli</code> can sign the same message. Type your address in step 2, fill in steps 1 and 3, and the command below fills in with your message. Paste the signature it prints in step 4. The message carries the same age attestation, so sign it only if it is true for you. This was checked with btcli 9.23.2. Run <code>btcli wallet sign --help</code> to see the options in your version.</p>
 <pre><code id="btcli">btcli wallet sign --wallet-name &lt;your wallet&gt; --no-use-hotkey --message '&lt;message from step 4&gt;'</code></pre>
 <ul>
 <li><code>--no-use-hotkey</code> signs with the wallet's coldkey, which btcli will ask you to unlock locally. Without it btcli asks which key to use. To sign with a hotkey, use <code>--use-hotkey --hotkey &lt;name&gt;</code>.</li>
