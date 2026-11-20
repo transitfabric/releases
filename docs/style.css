@@ -39,3 +39,26 @@ button.btn:disabled{opacity:.45;cursor:not-allowed}
 main{overflow-wrap:anywhere}pre{overflow-wrap:normal}
 .hero-logo{display:block;width:auto;height:120px;max-width:100%;margin:24px 0 0}
 .mw{display:inline-block;max-width:100%;overflow-x:auto;overflow-y:hidden;vertical-align:middle}
+/* Grouped navigation (2026-11-20) */
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 20px}
+header .brand{display:inline-flex;align-items:center;gap:8px}
+header .brand img{height:26px;width:auto}
+nav.groups{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:0}
+nav.groups details{position:relative}
+nav.groups summary{list-style:none;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px;user-select:none}
+nav.groups summary::-webkit-details-marker{display:none}
+nav.groups summary::after{content:"\25BE";font-size:.75em;margin-left:4px}
+nav.groups summary:hover,nav.groups details[open] summary,nav.groups summary.active{color:var(--accent)}
+nav.groups summary.active{font-weight:600}
+nav.groups .menu{position:absolute;right:0;top:calc(100% + 4px);z-index:10;min-width:15rem;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+nav.groups .menu a{display:block;padding:6px 8px;border-radius:6px;color:var(--fg)}
+nav.groups .menu a small{display:block;color:var(--muted);font-size:.8rem;text-decoration:none}
+nav.groups .menu a:hover,nav.groups .menu a[aria-current]{background:var(--card);text-decoration:none;color:var(--accent)}
+nav.groups > a.top{color:var(--muted);padding:4px 8px}
+nav.groups > a.top:hover{color:var(--accent)}
+@media (max-width:560px){nav.groups .menu{left:0;right:auto}}
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:12px;margin:12px 0 20px}
+.groups-grid section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.groups-grid h3{margin:0 0 6px;font-size:1rem}
+.groups-grid ul{margin:0;padding-left:1.1rem}
+.groups-grid li{margin:4px 0}
