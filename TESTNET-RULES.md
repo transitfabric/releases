@@ -1,12 +1,12 @@
 # Testnet rewards: rules
 
-> **Final, version 2.1, effective 2026-11-17.** The rules were proposed on 14 November 2026 and open for feedback until 17 November, 12:00 UTC. What changed since the proposal is listed under [What changed from the proposal](#what-changed-from-the-proposal-2026-11-14). Any later change follows the [Changes](#changes) rules.
+> **Final, version 2.2, effective 2026-11-21.** The rules were proposed on 14 November 2026 and open for feedback until 17 November, 12:00 UTC. What changed since the proposal is listed under [What changed from the proposal](#what-changed-from-the-proposal-2026-11-14). Any later change follows the [Changes](#changes) rules.
 >
 > **Questions, or a case these rules don't cover:**
 > - open a [Testnet rules feedback](https://github.com/transitfabric/releases/issues/new?template=rules-feedback.yml) Issue; or
 > - upload a note to the [findings sandbox](https://submit.transitfabric.xyz) if you have no GitHub account.
 
-**Rules, version 2.1** (2.1, 2026-11-17: adds the owner-forwarder measurement correction under Fairness rules; it only raises credit). This page is the only place that says what testnet work may earn. Other pages link here and don't restate it.
+**Rules, version 2.2** (2.2, 2026-11-21: adds the fleet-outage void windows under Fairness rules; it only raises credit. 2.1, 2026-11-17: adds the owner-forwarder measurement correction; it only raises credit). This page is the only place that says what testnet work may earn. Other pages link here and don't restate it.
 
 ## In short
 
@@ -180,6 +180,12 @@ claimant's alpha = track pool × claimant's points / all points in that track
   - A void window counts as up for the uptime test, and nobody's points move.
   - We list void windows within 48 hours.
   - A release that needs a restart counts as full uptime for the window it's announced in and the next one.
+  - **The fleet outage (2026-11-20).** An automated cost guard on our side deleted the whole testnet fleet at about 22:30 UTC on 20 November 2026, in window 23,581. We rebuilt it with new validator keys and addresses, and tester.4.4 moves nodes onto it.
+    - **The outage.** From window 23,581 until the rebuilt validators score again, every window is void for everyone, as above.
+    - **The grace.** From then until 48 hours after tester.4.4 is published, a site that was measured in at least one of the 20 windows before the deletion is covered until the rebuilt validators first measure it: those windows are void for that site, as above. From the first window they measure it, its windows count as usual.
+    - **Declarations.** The honest-declaration test doesn't read a window of the outage or the grace in which the rebuilt validators hadn't yet completed a capacity test of the node.
+    - **Nobody gains.** Only what validators measured earns anything. Nothing is filled in for a window nobody measured, and no figure from before the outage is carried into one. The bounty's verified tier counts only days with a passing node, as always. It keeps the snapshot the validators attested for window 23,581 before the deletion, because that snapshot holds only earlier tests.
+    - **The windows.** The outage is windows 23,581 and 23,582: the rebuilt validators scored 23,582, with no tester node yet able to reach them. The grace runs from window 23,583 to window 23,624. tester.4.4 was published at 02:16 UTC on 21 November 2026, so the grace ends at 02:16 UTC on 23 November.
 - **Exploits.**
   - Points earned through an exploit are removed, whoever found it.
   - If you report it privately first, you keep your honest points and earn the finding.
@@ -235,4 +241,5 @@ claimant's alpha = track pool × claimant's points / all points in that track
 - **Age and attestation (2026-11-16).** Claimants must be 18 or older, or the age of majority where they live, and sign an attestation on the claim page. Earlier registrants keep their points but sign again.
 - **A current release (2026-11-16).** It counts, and the fast-upgrade role is scored, only once versions are measured.
 - **Measurement corrections (2026-11-17, version 2.1).** The owner-forwarder correction under Fairness rules. It only raises credit.
+- **The fleet outage (2026-11-21, version 2.2).** The 2026-11-20 outage and the grace after it, under Fairness rules, "Void windows". It only raises credit.
 - **Final values (2026-11-17).** The values marked *proposed value* are final as proposed: the 20 Mb/s capacity floor, the first 10 sites of a kind with the full environment bonus, 5 fleet sites per claimant, and 6 weeks of base for a founding operator.
