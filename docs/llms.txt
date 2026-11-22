@@ -53,3 +53,4 @@ Full rules for agents: https://transitfabric.xyz/AGENTS.md
 - [Testnet rules](https://transitfabric.xyz/testnet-rules.html): what testnet work may earn; final, version 2.2, effective 2026-11-21.
 - [Operator guide](https://transitfabric.xyz/operator-guide.html): what pays, what your host must allow, how to declare honestly; read before you choose a setup.
 - [FAQ](https://transitfabric.xyz/faq.html): customers, how capacity is bought, operator costs and the 95th-percentile bill, capacity tests.
+- [Fabric and Nym](https://transitfabric.xyz/compare-nym.html): how Fabric (transit and routing between nodes) differs from Nym (a privacy mixnet), and how Nym could use Fabric; nothing has been discussed with Nym.

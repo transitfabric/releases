@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fabric and Nym: different layers | Transit Fabric</title><meta name="description" content="How Transit Fabric differs from Nym: a transit and routing network compared with a privacy mixnet, and how they could work together."><meta property="og:type" content="website"><meta property="og:site_name" content="Transit Fabric"><meta property="og:title" content="Fabric and Nym: different layers | Transit Fabric"><meta property="og:description" content="How Transit Fabric differs from Nym: a transit and routing network compared with a privacy mixnet, and how they could work together."><meta property="og:url" content="https://transitfabric.xyz/compare-nym.html"><meta property="og:image" content="https://transitfabric.xyz/og-card.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Transit Fabric logo"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Fabric and Nym: different layers | Transit Fabric"><meta name="twitter:description" content="How Transit Fabric differs from Nym: a transit and routing network compared with a privacy mixnet, and how they could work together."><meta name="twitter:image" content="https://transitfabric.xyz/og-card.png"><link rel="stylesheet" href="style.css?v=20261120c"><link rel="icon" type="image/png" href="logo.png"></head><body>
+<header><a class="brand" href="index.html"><picture><source srcset="logo-hero-dark-mode.png" media="(prefers-color-scheme: dark)"><img src="logo-hero.png" alt="" width="42" height="26"></picture>Transit Fabric</a>
+<nav class="groups" aria-label="Site"><details><summary>Run a node</summary><div class="menu"><a href="quickstart.html">Quick start<small>Wallet, download, node, peer</small></a><a href="migrate.html">Move to tester.4.4<small>Rebuilt fleet: steps for each node</small></a><a href="operator-guide.html">Operator guide<small>What pays, what your host must allow</small></a><a href="testnet-rules.html">Testnet rules<small>What testnet work may earn</small></a><a href="known-limits.html">Known limits<small>Read before reporting a bug</small></a></div></details><details><summary>Network</summary><div class="menu"><a href="https://dashboard.transitfabric.xyz/">Network dashboard<small>Live nodes, validators and routes</small></a><a href="leaderboard.html">Leaderboard<small>Founding testers by points</small></a></div></details><details><summary>Bounty</summary><div class="menu"><a href="bounty.html">Bug bounty<small>Points, tips and recognition</small></a><a href="claim.html">Claim credit<small>Register your address</small></a><a href="redteam/index.html">Red-team pack<small>Specs, threat model, simulator</small></a></div></details><details><summary class="active">Learn</summary><div class="menu"><a href="papers.html">Papers<small>Whitepaper and short paper, EN and PL</small></a><a href="faq.html">FAQ<small>Customers, buying capacity, costs</small></a><a href="compare-nym.html" aria-current="page">Fabric and Nym<small>How Fabric differs from a privacy mixnet</small></a></div></details><a class="top" href="https://github.com/transitfabric/releases/releases">Download</a></nav></header>
+<main>
+<h1 id="fabric-and-nym">Fabric and Nym: different layers, complementary networks</h1>
+<p>Status of this page: Transit Fabric is live on Bittensor testnet, with mainnet planned for 1 January 2027. Facts about Nym come from Nym's own documentation, read on 2026-11-21 (sources at the end). Nothing on this page is an earnings or price claim, and nothing has been discussed with Nym.</p>
+<h2 id="the-short-version">The short version</h2>
+<p>Nym and Transit Fabric both pay independent operators to carry other people's traffic, and both measure that work before paying for it. They answer different questions:</p>
+<ul>
+<li><strong>Nym</strong> asks: <em>how do packets cross the internet without anyone being able to tell who is talking to whom?</em> It is a privacy network. It deliberately adds delay and cover traffic, because that is what defeats traffic analysis.</li>
+<li><strong>Fabric</strong> asks: <em>how do packets cross the internet on the best measured path, over capacity that independent operators really have?</em> It is a transit and routing network. It removes delay wherever measurement shows a faster path exists.</li>
+</ul>
+<p>Nym is a privacy layer that runs on top of the internet. Fabric is a transit layer underneath applications, closer to a backbone. They are not competitors. A privacy network like Nym is the kind of network that could carry its own traffic between its nodes over Fabric.</p>
+<p>Decentralized VPN networks such as Mysterium and Sentinel are also sometimes compared with Fabric. They differ from it in the same way: they are exit and VPN networks, which send a user's traffic out to the internet, while Fabric is transit between nodes.</p>
+<h2 id="side-by-side">Side by side</h2>
+<table>
+<thead><tr><th></th><th>Nym</th><th>Transit Fabric</th></tr></thead>
+<tbody>
+<tr><td><strong>What it is</strong></td><td>A mixnet: privacy for network traffic, against observers who can watch large parts of the internet</td><td>A decentralized network fabric: IP transit between nodes, with routes chosen by open competition</td></tr>
+<tr><td><strong>The layer it works at</strong></td><td>An anonymity overlay for user traffic; applications and NymVPN route through it</td><td>The transit layer: BGP over WireGuard between nodes, carrying traffic for any application without the application changing</td></tr>
+<tr><td><strong>How a packet travels</strong></td><td>Five hops: an entry gateway, three mix layers and an exit gateway. Each mix node removes one layer of Sphinx encryption, applies a random delay and forwards the packet</td><td>Over the path the network's production route table chooses. Route solvers compete to produce that table, and validators grade it on measured latency and loss</td></tr>
+<tr><td><strong>Delay</strong></td><td>Added on purpose: random delays reorder packets and break the timing link between sender and receiver</td><td>Minimized: the incentive rewards routes measured faster than the direct internet path</td></tr>
+<tr><td><strong>Who measures the work</strong></td><td>Nyx validators run the Nym API, which monitors node performance</td><td>Bittensor validators probe every node, run capacity tests and score both mechanisms deterministically: any honest validator computes the same weights from the same committed inputs</td></tr>
+<tr><td><strong>What gets paid</strong></td><td>Nodes in the rewarded set (currently 240: 60 mixnodes, 80 entry gateways and 100 exit gateways, chosen probabilistically every hour). A node's reward depends on its performance and its stake saturation</td><td>Mechanism 0: measured transit capacity a node carries for the network. Mechanism 1: route tables that beat the baseline</td></tr>
+<tr><td><strong>Stake</strong></td><td>Operators bond NYM per node, and others can delegate to it. Stake counts as reputation, with a per-node saturation level</td><td>Operators register a UID on the subnet and post collateral. Nodes under a UID are scored on what they measurably provide; there is no delegation to individual nodes</td></tr>
+<tr><td><strong>Where the funding comes from</strong></td><td>A mixmining pool, with additional rewards increasingly coming from paid applications on the mixnet; NymVPN is the first</td><td>Bittensor emissions to the subnet, moving toward wholesale customers paying for transit</td></tr>
+<tr><td><strong>Chain and token</strong></td><td>Its own chain, Nyx (Cosmos SDK, with CosmWasm smart contracts), and the NYM token</td><td>A Bittensor subnet, with the subnet's own alpha token. Fabric runs no chain of its own</td></tr>
+<tr><td><strong>Leaving to the open internet</strong></td><td>Exit gateways strip the mixnet layers and forward traffic to its destination</td><td>Transit nodes never send traffic to the public internet. Only registered exit partners and registered gateways do, under their own rules</td></tr>
+<tr><td><strong>Where it stands</strong></td><td>A live network with a consumer VPN, NymVPN</td><td>Live on Bittensor testnet; mainnet planned for 1 January 2027</td></tr>
+</tbody>
+</table>
+<h2 id="why-the-difference-in-layers-matters">Why the difference in layers matters</h2>
+<p><strong>Privacy and speed pull in opposite directions.</strong> A mixnet's protection comes from mixing: delays, reordering and cover traffic, so timing reveals nothing. A transit fabric's value comes from the opposite: the shortest measured path and real capacity. One network can't maximise both, which is why they sit at different layers.</p>
+<p><strong>Fabric doesn't look inside traffic, and doesn't hide who is talking either.</strong> Fabric links are encrypted (WireGuard), and every node has a key-derived address. But Fabric is built to route fast, not to stop an observer linking flows by timing. Anyone who needs that protection needs a privacy layer such as Nym on top.</p>
+<p><strong>Nym doesn't choose the internet path between its nodes.</strong> A Nym packet's hops between gateways and mix nodes cross the ordinary internet, on whatever paths the operators' upstream providers pick. That is the layer Fabric works on.</p>
+<h2 id="how-nym-could-use-fabric">How Nym could use Fabric</h2>
+<p>This is a possibility, not an arrangement. Nothing has been discussed with Nym.</p>
+<ul>
+<li><strong>Carrying the hops between Nym nodes.</strong> A Nym operator running a Fabric node next to a gateway or mix node could send its node-to-node traffic over Fabric's measured paths and capacity, not over the default internet route. That is Fabric's launch product: transit between sites, with VPN providers named as a first market.</li>
+<li><strong>Exits stay Nym's.</strong> Fabric transit nodes never egress to the internet, so Fabric would carry Nym's internal hops and leave its exit gateways as they are.</li>
+<li><strong>Privacy is Nym's call.</strong> Fabric would see only Sphinx-encrypted packets between Nym nodes, and it adds no new view of who is talking to whom inside the mixnet. But Fabric nodes would see the outer flows between Nym nodes, as any internet transit provider does today. Whether that is acceptable belongs in Nym's own threat model.</li>
+<li><strong>How it would be bought.</strong> Through a reseller, as described in the <a href="faq.html#how-do-customers-buy-capacity">FAQ</a>, with prices quoted in US dollars.</li>
+</ul>
+<h2 id="what-the-two-have-in-common">What the two have in common</h2>
+<ul>
+<li>Independent operators are paid for work the network measures, not for claims.</li>
+<li>Both started on network-funded rewards and aim to be paid by real usage.</li>
+<li>Both put performance ahead of size: a node that performs poorly earns little, however much it has behind it.</li>
+</ul>
+<h2 id="sources">Sources</h2>
+<p>Nym, read on 2026-11-21:</p>
+<ul>
+<li>Nym docs: <a href="https://nym.com/docs/network/architecture/mixnet">network overview</a>, <a href="https://nym.com/docs/network/mixnet-mode/traffic-flow">traffic flow</a>, <a href="https://nym.com/docs/network/mixnet-mode/loopix">Loopix design</a></li>
+<li>Nym docs: <a href="https://nym.com/docs/network/infrastructure/exit-services">exit gateway services</a></li>
+<li>Nym docs: <a href="https://nym.com/docs/operators/tokenomics">tokenomics</a>, <a href="https://nym.com/docs/operators/tokenomics/mixnet-rewards">mixnet rewards</a>, <a href="https://nym.com/docs/operators/tokenomics/validator-rewards">validator rewards</a></li>
+</ul>
+<p>Transit Fabric: the <a href="redteam/whitepaper.html">whitepaper</a>, the <a href="redteam/scoring.html">scoring spec</a>, the <a href="papers.html">papers</a> and the <a href="faq.html">FAQ</a>.</p>
+</main>
+<footer>Testnet subnet 611 only. Never use a mainnet wallet or real TAO.
+<a href="https://github.com/transitfabric/releases/releases">Releases</a> ·
+<a href="https://github.com/transitfabric/releases/issues">Issues</a> ·
+<a href="https://github.com/transitfabric/releases/security/advisories/new">Report a vulnerability</a> ·
+<a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a></footer>
+<script src="nav.js?v=20261120c" defer></script>
+</body></html>
