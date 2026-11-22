@@ -54,3 +54,7 @@ Full rules for agents: https://transitfabric.xyz/AGENTS.md
 - [Operator guide](https://transitfabric.xyz/operator-guide.html): what pays, what your host must allow, how to declare honestly; read before you choose a setup.
 - [FAQ](https://transitfabric.xyz/faq.html): customers, how capacity is bought, operator costs and the 95th-percentile bill, capacity tests.
 - [Fabric and Nym](https://transitfabric.xyz/compare-nym.html): how Fabric (transit and routing between nodes) differs from Nym (a privacy mixnet), and how Nym could use Fabric; nothing has been discussed with Nym.
+- [Fabric for ISPs and regional carriers](https://transitfabric.xyz/for-isps.html): what an ISP can run, what its network must allow, and what is planned (gateways, buying through a reseller).
+- [Fabric for data centres and hosting providers](https://transitfabric.xyz/for-datacenters.html): node types, requirements, and the planned registered-gateway role.
+- [Fabric for VPN providers](https://transitfabric.xyz/for-vpn-providers.html): a measured backbone between your servers, and the planned exit-partner role.
+- [Fabric for companies with unused transit](https://transitfabric.xyz/for-unused-transit.html): putting committed but unused transit to work, with the 95th-percentile caveats.
