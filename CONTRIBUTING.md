@@ -35,3 +35,7 @@ Ordinary bugs go in a public Issue. Peering requests use the Peering request for
 ## Terms
 
 Contributions and reports are covered by the [Terms of Service](https://transitfabric.xyz/terms.html) and the [Privacy Policy](https://transitfabric.xyz/privacy.html). Points and any awards need a registration on the claim page, which attests that you are 18 or older, or the age of majority where you live, whichever is higher.
+
+## Contributor License Agreement
+
+Code, documentation and design contributions need a one-time signature of the [Transit Fabric Individual Contributor License Agreement](CLA.md). You keep ownership of your work; the agreement gives Transit Fabric LLC a licence to use it, covers every contribution you have made or will make, and you sign it with a comment from your GitHub account (see "How to sign" in the agreement).
