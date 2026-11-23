@@ -1,13 +1,15 @@
 ---
 name: transit-fabric
-description: Use when the user wants to install, run, check or troubleshoot a Transit Fabric node on Bittensor testnet subnet 611, interpret `bwos doctor` output, or file a bug report for Transit Fabric (tester v0.1.0-tester.5.1). Testnet only. Covers verifying downloads, handing key and binding steps to the human, System One (fabric-sense), and filing an Issue.
+description: Use when the user wants to install, run, check or troubleshoot a Transit Fabric node on Bittensor testnet subnet 611, interpret `bwos doctor` output, or file a bug report for Transit Fabric (tester v0.1.0-tester.5.2). Testnet only. Covers verifying downloads, handing key and binding steps to the human, System One (fabric-sense), and filing an Issue.
 ---
 
-# Transit Fabric testnet (tester v0.1.0-tester.5.1)
+# Transit Fabric testnet (tester v0.1.0-tester.5.2)
 
 Transit Fabric is a network fabric run as a Bittensor subnet. This release is on **testnet, subnet 611** only. The command-line tools are named `bwos`. System One (`fabric-sense`) is the node's watchdog sidecar.
 
-**New in tester.5.1:** nodes poll the validators' object stores over kept-alive HTTP/1.1 connections, at most 8 stores at a time and with jitter (kernel nodes every 40 s), instead of opening a new TCP connection to every store every 10 s, which a tester's host flagged as spam. The store server keeps up to 2 connections per IP. Every node and validator should update: kernel nodes re-run `install.sh`; container nodes are recreated on the new image (`migrate-4.4.sh container <name>`), not just restarted. No scoring change.
+**New in tester.5.2 (validators only):** a validator restarted during a window now keeps that window's path-probe draw and the drawn route tables on disk (`draws/` in its state directory), so it carries the same state and sets the same weights as if it had never restarted. Validators and shadow validators need it. Nodes and solvers stay on tester.5.1. No scoring change.
+
+**From tester.5.1:** nodes poll the validators' object stores over kept-alive HTTP/1.1 connections, at most 8 stores at a time and with jitter (kernel nodes every 40 s), instead of opening a new TCP connection to every store every 10 s, which a tester's host flagged as spam. The store server keeps up to 2 connections per IP. Every node and validator should update: kernel nodes re-run `install.sh`; container nodes are recreated on the new image (`migrate-4.4.sh container <name>`), not just restarted. No scoring change.
 
 **From tester.5:** tester.5 schedules scoring version 2 at block 8,544,960 (window 23,736, about Sat 2026-11-28 16:03 UTC): automatic peering (validators attest a peer directory each window and draw each opted-in node's peers) and Mechanism 1 grading on drawn pairs. Every validator, probe agent and node needs tester.5 before block 8,544,600 (about 14:51 UTC that day); keys, binding and consent stay. To be drawn peers, a kernel node sets `"peering"` in `node.json` and a public no-root or container node passes `--public` (with `--validators` and `--node-key`). The data-plane gate stays off, and Mechanism 1 pays outside solvers almost nothing in windows 23,736 and 23,737, until drawn pairs give it measurements. A node still on tester.4.3 or earlier moves to the rebuilt fleet first: https://transitfabric.xyz/migrate.html.
 
