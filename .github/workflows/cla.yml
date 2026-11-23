@@ -1,0 +1,112 @@
+# CLA check: every pull request author must have signed the Transit Fabric Individual Contributor
+# License Agreement (CLA.md in transitfabric/releases). Signing is a comment from the author's own
+# GitHub account whose first line is the phrase below, on the pull request or on a CLA signing issue
+# (an issue labelled `cla`). Signatures are kept privately in transitfabric/cla-signatures (CLA s.11).
+#
+# Security: pull_request_target runs this file from the base branch with no checkout of the pull
+# request's code, so a pull request can't change what runs here. The token below can only write
+# the private signature repository (a fine-grained token with Contents read/write on it alone).
+name: cla
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  statuses: write
+
+concurrency:
+  group: cla-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  cla:
+    if: github.event_name == 'pull_request_target' || github.event.issue.pull_request || contains(github.event.issue.labels.*.name, 'cla')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          SIG_TOKEN: ${{ secrets.CLA_SIGNATURES_TOKEN }}
+        with:
+          script: |
+            const VERSION = 1;
+            const CLA_URL = 'https://github.com/transitfabric/releases/blob/e5645ec/CLA.md';
+            const CLA_SHA256 = '7c198ad18652f8290bcd6217152c82d5749d7d5d1fe7cbdf1c5ca75ac722fec2';
+            const PHRASE = 'I have read the Transit Fabric Individual Contributor License Agreement, version 1, and I hereby sign it.';
+            const SIG_OWNER = 'transitfabric', SIG_REPO = 'cla-signatures', SIG_PATH = `signatures/v${VERSION}.json`;
+            const EXEMPT = new Set(['dependabot[bot]', 'github-actions[bot]', 'renovate[bot]']);
+            const MARK = '<!-- tf-cla-check -->';
+            const crypto = require('crypto');
+            const { owner, repo } = context.repo;
+
+            const sigToken = process.env.SIG_TOKEN;
+            if (!sigToken) { core.setFailed('CLA_SIGNATURES_TOKEN is not set; maintainers must add it.'); return; }
+            const sig = getOctokit(sigToken);
+
+            async function loadSigs() {
+              const r = await sig.rest.repos.getContent({ owner: SIG_OWNER, repo: SIG_REPO, path: SIG_PATH });
+              return { list: JSON.parse(Buffer.from(r.data.content, 'base64').toString('utf8')), sha: r.data.sha };
+            }
+            const signedIds = (list) => new Set(list.map((s) => s.user_id));
+
+            // 1. A signing comment: record it (the commenter signs for themselves only).
+            if (context.eventName === 'issue_comment') {
+              const c = context.payload.comment;
+              const first = (c.body || '').split(/\r?\n/).map((l) => l.trim()).find((l) => l.length) || '';
+              const norm = (s) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+              if (norm(first) !== norm(PHRASE)) { core.info('not a signing comment'); }
+              else {
+                for (let attempt = 0; attempt < 3; attempt++) {
+                  const { list, sha } = await loadSigs();
+                  if (signedIds(list).has(c.user.id)) { core.info(`${c.user.login} already signed`); break; }
+                  list.push({
+                    login: c.user.login, user_id: c.user.id, cla_version: VERSION, cla_url: CLA_URL, cla_sha256: CLA_SHA256,
+                    repo: `${owner}/${repo}`, number: context.payload.issue.number, comment_id: c.id, comment_url: c.html_url,
+                    signed_at: c.created_at, body_sha256: crypto.createHash('sha256').update(c.body, 'utf8').digest('hex'),
+                  });
+                  try {
+                    await sig.rest.repos.createOrUpdateFileContents({ owner: SIG_OWNER, repo: SIG_REPO, path: SIG_PATH, sha,
+                      message: `CLA v${VERSION}: ${c.user.login} (${owner}/${repo}#${context.payload.issue.number})`,
+                      content: Buffer.from(JSON.stringify(list, null, 2) + '\n').toString('base64'),
+                      committer: { name: 'Transit Fabric', email: 'dev@transitfabric.xyz' } });
+                    await github.rest.reactions.createForIssueComment({ owner, repo, comment_id: c.id, content: '+1' });
+                    break;
+                  } catch (e) { if (e.status !== 409 || attempt === 2) throw e; }
+                }
+              }
+              if (!context.payload.issue.pull_request) return; // a signing issue: nothing more to check
+            }
+
+            // 2. The pull request's status.
+            const number = context.payload.pull_request?.number ?? context.payload.issue.number;
+            const pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
+            const author = pr.user;
+            const assoc = pr.author_association;
+            const { list } = await loadSigs();
+            const ok = EXEMPT.has(author.login) || ['OWNER', 'MEMBER'].includes(assoc) || signedIds(list).has(author.id);
+            await github.rest.repos.createCommitStatus({ owner, repo, sha: pr.head.sha, context: 'CLA',
+              state: ok ? 'success' : 'failure',
+              description: ok ? 'Contributor License Agreement signed' : `@${author.login} hasn't signed the CLA yet`,
+              target_url: CLA_URL });
+            if (ok) return;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: number, per_page: 100 });
+            if (comments.some((x) => (x.body || '').includes(MARK))) return;
+            await github.rest.issues.createComment({ owner, repo, issue_number: number, body: [
+              MARK,
+              `Thanks for the pull request, @${author.login}. Before we can merge it, please sign the [Transit Fabric Individual Contributor License Agreement, version ${VERSION}](${CLA_URL}). You keep ownership of your work, anything we release under an open-source licence stays available under it, and you sign once for everything you contribute.`,
+              '',
+              'To sign, reply to this pull request with this comment from your own account, filling in the brackets:',
+              '',
+              '```',
+              PHRASE,
+              'I am 18 or older, or the age of majority where I live, whichever is higher.',
+              'UIDs or hotkeys on Transit Fabric that I control or benefit from: [list them, or "none"]',
+              '```',
+              '',
+              'The check turns green once your signature is recorded.',
+            ].join('\n') });
