@@ -62,3 +62,12 @@ nav.groups > a.top:hover{color:var(--accent)}
 .groups-grid h3{margin:0 0 6px;font-size:1rem}
 .groups-grid ul{margin:0;padding-left:1.1rem}
 .groups-grid li{margin:4px 0}
+/* Stacked cards on phones for wide tables (2026-11-24) */
+@media (max-width:640px){
+table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+table.stack thead{position:absolute;left:-9999px}
+table.stack tr{border:1px solid var(--line);border-radius:8px;margin:0 0 12px;background:var(--card)}
+table.stack td{border:0;border-bottom:1px solid var(--line);padding:6px 10px}
+table.stack td:last-child{border-bottom:0}
+table.stack td::before{content:attr(data-label);display:block;font-size:.8rem;color:var(--muted)}
+}
