@@ -71,3 +71,5 @@ table.stack td{border:0;border-bottom:1px solid var(--line);padding:6px 10px}
 table.stack td:last-child{border-bottom:0}
 table.stack td::before{content:attr(data-label);display:block;font-size:.8rem;color:var(--muted)}
 }
+table.stack th,table.stack td{overflow-wrap:normal;word-break:normal;hyphens:manual}
+@media (min-width:641px){table.stack td:first-child,table.stack th:first-child{min-width:7.5rem}}
