@@ -1,8 +1,8 @@
-> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main), file docs/specs/scoring.md. Links into the private source tree are shown as plain text.
+> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main). Paths into the private source tree are left out.
 
 # Spec: scoring
 
-Status: draft · Implemented in `crates/bwos-core/src/scoring/mod.rs` · Red-team every change (`incentive-red-team` subagent)
+Status: draft · Implemented in `bwos_core::scoring` · Red-team every change (`incentive-red-team` subagent)
 
 All scoring is **integer fixed-point**. Fractions are parts per million (`ppm`, 1_000_000 = 1.0). Divisions floor. Lists are sorted by UID before any reduction. This makes weights byte-identical across validators and platforms.
 

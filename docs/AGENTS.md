@@ -16,13 +16,13 @@ Transit Fabric is a Bittensor subnet for a decentralized network fabric, running
 
 **From tester.4.2:** tester.4.2 is a small hotfix for validators only: a validator now holds back a weight commit that would land within 8 blocks of the next epoch, so every validator's commit lands in the same reveal epoch (no scoring change). Nodes and solvers don't need to update.
 
-**From tester.4.1:** tester.4.1 is mostly for validators: the subnet owner's on-chain validator allowlist (ADR-0078), parsed from testnet block 8,481,240 (about 2026-11-19 19:40 UTC, report-only) and in force from block 8,495,640 (about 2026-11-21 19:40 UTC), and two-source chain reads that tolerate a lagging source. For anyone: shadow mode (`bwos-validator shadow`) recomputes the validators' weights from public data; a `MISMATCH` is bounty-eligible (https://transitfabric.xyz/redteam/shadow-validator.html). Nodes need no change; upgrading `fabric-sense` before block 8,495,640 keeps a node's anchor rebuild identical to the validators' chain-only set.
+**From tester.4.1:** tester.4.1 is mostly for validators: the subnet owner's on-chain validator allowlist (ADR-0078), parsed from testnet block 8,481,240 (about 2026-11-19 19:40 UTC, report-only) and, in tester.4.1, in force from block 8,495,640 (about 2026-11-21 19:40 UTC; tester.4.4 moved the chain-only validator set to block 8,538,840 and this date is superseded), and two-source chain reads that tolerate a lagging source. For anyone: shadow mode (`bwos-validator shadow`) recomputes the validators' weights from public data; a `MISMATCH` is bounty-eligible (https://transitfabric.xyz/redteam/shadow-validator.html). Nodes need no change; upgrading `fabric-sense` before block 8,495,640 keeps a node's anchor rebuild identical to the validators' chain-only set.
 
-**From tester.4:** a node builds a current validator set at first start (no hand rebuild of the anchor; a solver still starts from a current one), NAT dial-in and validator fetch fixes, and scoring version 1 from testnet block 8,493,120 (about 2026-11-21 11:15 UTC). From tester.3: `bwos doctor --json`, `bwos report` and an agent skill. Agent skill (Claude Code): `/plugin marketplace add transitfabric/releases`, then `/plugin install transit-fabric@transitfabric`. The bounty opens soon. Reports are welcome now, filed the same way.
+**From tester.4:** a node builds a current validator set at first start (no hand rebuild of the anchor; a solver still starts from a current one), NAT dial-in and validator fetch fixes, and scoring version 1 at testnet block 8,493,120 (about 2026-11-21 11:15 UTC; superseded: tester.4.4 moved it to block 8,536,320). From tester.3: `bwos doctor --json`, `bwos report` and an agent skill. Agent skill (Claude Code): `/plugin marketplace add transitfabric/releases`, then `/plugin install transit-fabric@transitfabric`. The bounty opens soon. Reports are welcome now, filed the same way.
 
 ## Where things are
 
-- Release and downloads: https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.5.2. Binaries are for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `bwos-solver`, `bwos-validator`, `minimal_solver`), plus a no-root container image, router images and `install.sh`. The `bwos` CLI also ships for macOS, and the link page for any OS.
+- Release and downloads: https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.5.2. Binaries are for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `fabric-sense`, `bwos-solver`, `bwos-validator`, `minimal_solver`), plus a no-root container image, router images and `install.sh`. The `bwos` CLI also ships for macOS, and the link page for any OS.
 - Checksums: the `SHA256SUMS` asset on the release. `MANIFEST.json` has the commit and the file list. `latest.json` (a release asset) lists the version, every asset's sha256 and url, the hash of `SHA256SUMS` and the validator set's `validator_set_not_after_block`. It comes from the same place as the files, so it does not replace comparing `SHA256SUMS` with the announced hash.
 - Quick start: https://transitfabric.xyz/quickstart.html. Also the `QUICKSTART.md` and `testers.md` assets. Read the quick start before you act.
 - Known limits: https://transitfabric.xyz/known-limits.html.
@@ -77,17 +77,16 @@ https://transitfabric.xyz/redteam/FINDING.md. YAML front matter, then sections:
 ```
 ---
 title: <one line>
-severity_claimed: critical | high | medium | low
+severity: critical | high | medium | low
+eligibility: open | verified
 component: <scoring | measurement | receipts | identity | encoding | node | validator | solver | cli | link-page | docs | other>
 version: <release tag, or redteam-pack-<sha>>
-claim_address: <ss58, optional>
-reproduction: sim | testnet | none
 ---
 ## Summary
 ## Steps to reproduce
 ## Expected vs actual
 ## Impact
-## Simulator scenario (optional)
+## Proof of concept
 ## Suggested fix
 ```
 
@@ -95,7 +94,7 @@ Points need a reproduction against a named version. The first valid report wins.
 
 ## The red-team pack
 
-https://transitfabric.xyz/redteam/index.html holds the scoring, measurement, receipts, capacity-bonds, identity and encoding specs, the threat model and the whitepaper, each as HTML and raw Markdown (`https://transitfabric.xyz/redteam/<name>.md`). The simulator `bwos-sim` is a static Linux binary, published as an asset of a `redteam-pack-<sha>` pre-release on https://github.com/transitfabric/releases/releases. Walk-through: https://transitfabric.xyz/redteam/simulator.html. Run it only after checking its checksum. Items marked open or accepted in the threat model earn credit only for a new exploit path.
+https://transitfabric.xyz/redteam/index.html holds the scoring, measurement, receipts, capacity-bonds, identity and encoding specs, and the threat model, each as HTML and raw Markdown (`https://transitfabric.xyz/redteam/<name>.md`). The simulator `bwos-sim` is a static Linux binary, published as an asset of a `redteam-pack-<sha>` pre-release on https://github.com/transitfabric/releases/releases. Walk-through: https://transitfabric.xyz/redteam/simulator.html. Run it only after checking its checksum. Items marked open or accepted in the threat model earn credit only for a new exploit path.
 
 ## Limits for agents
 
@@ -105,4 +104,4 @@ https://transitfabric.xyz/redteam/index.html holds the scoring, measurement, rec
 
 ## Findings sandbox (no GitHub account)
 
-- [Upload page](https://submit.transitfabric.xyz): private, no account, no bounty credit. Agents: `curl -sS -F file=@finding.md -F age_attested=yes -F terms_version=1 https://submit.transitfabric.xyz/upload` (optional `-F attachment=@repro.zip`). `age_attested=yes` states that the human sending it is 18 or older, or the age of majority where they live, whichever is higher, and accepts the [Terms](https://transitfabric.xyz/terms.html) and [Privacy Policy](https://transitfabric.xyz/privacy.html); ask them, never assume it. The reply is JSON with a receipt ID. Limit: 10 uploads a day per address.
+- [Upload page](https://submit.transitfabric.xyz): private, no account, no bounty credit. Agents: `curl -sS -F file=@finding.md -F age_attested=yes -F terms_version=1 https://submit.transitfabric.xyz/upload` (optional `-F attachment=@repro.zip`). `age_attested=yes` states that the human sending it is 18 or older, or the age of majority where they live, whichever is higher, and accepts the [Terms](https://transitfabric.xyz/terms.html) and [Privacy Policy](https://transitfabric.xyz/privacy.html); ask them, never assume it. The reply is JSON with a receipt ID. Limit: 40 uploads a day per address.

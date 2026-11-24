@@ -14,7 +14,7 @@ Each window `w`, the shadow:
 4. Watches every block for `SubtensorModule::TimelockedWeightsRevealed` events on the subnet. For each one it finds the commit the block revealed: the hotkey's `TimelockedWeightCommits` entry that the block removed. That commit's block names the window, because a validator commits window `w`'s weights in `w + 1`. The shadow then reads the revealed row from `Weights` at that block. These reads also come from both sources.
 5. Compares the rows and closes the window's record at `S(w + 3) + 10`, after every reveal has landed. On 611 on 2026-11-17, validators committed window `w` at about `S(w + 1) + 24`. The chain revealed the commit either in the next block or at about `S(w + 2) + 24`, one tempo later. Either way it lands well before the record closes.
 
-What it never does is enforced in the code (`crates/bwos-validator/src/shadow.rs`) and covered by its tests:
+What it never does is enforced in its code and covered by its tests:
 
 - **No usable keys.** It refuses `--hotkey`, `--wallet`, `--wallet-name`, `--wallet-hotkey`, `--coldkey` and `--attestation-key`. It holds only a throwaway in-memory key that can't sign for any registered hotkey. The key fills the live loop's own-identity slots, and is never saved and never handed to the chain client.
 - **No chain writes.** The shadow's chain client has no signer at all. A wrapper in front of it keeps the weights that scoring would submit and refuses every other write (commitment, axon).
@@ -47,7 +47,7 @@ On testnet, use the same pair our validators use (the release's `network.json` l
 - `wss://test.finney.opentensor.ai:443`, the public archive node;
 - `wss://rpc-test.transitfabric.xyz`, the fleet's lite node, which keeps 50,000 blocks of state.
 
-**The fleet's node has a gap in its history.** It was warp-synced, so it holds no blocks below 8,453,375. A fresh shadow, like a fresh validator, reads back through its lookback, and on 611 today that reaches below that block. The shadow reads through the same code as `live` (`RpcReads`, ADR-0078), including H8's bounded testnet deep-read exception. A read below block 8,453,375 that the public archive serves, and the fleet's node provably can't, is taken from the archive alone. The shadow logs it as a `single_source_deep_read` event. The exception ends once the fleet node's head passes block 8,513,640 (about 2026-11-24). After that every read is two-source again. A shadow started after that, whose lookback still reaches into the gap, retries those reads until the gap leaves its lookback, at about block 8,530,060 (2026-11-26). Run it with the public archive as both sources until then. If you run your own node as one of the two sources, sync it with full history (`--sync full`, or archive) so it covers the lookback.
+**The fleet's node has a gap in its history.** It was warp-synced, so it holds no blocks below 8,453,375. A fresh shadow, like a fresh validator, reads back through its lookback, and on 611 today that reaches below that block. The shadow reads through the same code as `live` (`RpcReads`, ADR-0078), including H8's bounded testnet deep-read exception. A read below block 8,453,375 that the public archive serves, and the fleet's node provably can't, is taken from the archive alone. The shadow logs it as a `single_source_deep_read` event. The exception ended once the fleet node's head passed block 8,513,640 (2026-11-24). Every read is two-source again. A shadow started now, whose lookback still reaches into the gap, retries those reads until the gap leaves its lookback, at about block 8,530,060 (2026-11-26). Until then, run it with the public archive as both sources. If you run your own node as one of the two sources, sync it with full history (`--sync full`, or archive) so it covers the lookback.
 
 Better still, make one of them your own subtensor testnet node. That makes the two-source check independent of us. Each endpoint passes the network's endpoint and genesis checks before anything is read, so a mainnet endpoint is refused whatever its URL says. `--network` takes `test` or `local` only.
 
@@ -81,7 +81,7 @@ Better still, make one of them your own subtensor testnet node. That makes the t
 | `--windows <n>` | forever | Stop after scoring `n` windows. |
 | `--scoring-v1-block <block>` | shipped | `local` only, as for `live`. |
 
-Run it under systemd or `tmux`. It logs to stderr. Give it a few windows: the first window it scores is the one after it starts.
+Run it under systemd or `tmux`. It logs to stderr. Give it a few windows. The first window it scores is the last one that finished before it started: a shadow started in window `w` scores `w - 1` once `w` is 10 blocks old.
 
 ## Reading the results
 
@@ -189,4 +189,5 @@ Reading reveals costs a few calls a block per source.
 - **Carried state starts empty.** See warm-up above. A shadow that has been running alongside the validators since a window they all started from is the strongest witness.
 - **Kept validator sets are built once (ADR-0078 1d).** A record the shadow fetched later than a validator did can leave a member out of its set for that window, and the weights then differ. The shadow logs `set_member_dropped` events when this happens. Treat a mismatch that follows one as doubtful.
 - **Path-probe draws.** If the shadow misses a window's draw (`S + 36` to `S + 48`), it holds Mechanism 1 back for that window, as a validator would. That is a shadow-only reason, so those rows are listed in `unchecked`, not compared.
+- **Restarts and path-probe draws.** From tester.5.2 a shadow keeps each window's draw on disk under `<state-dir>/draws/`. A restart after the `S + 36` to `S + 48` draw puts it back, so the shadow carries the same state as one that never restarted. A shadow that is down during the draw still misses it. Restart a shadow only right after a window has been scored and before block 36 of the next one.
 - **Receipts.** See OQ-393 above.

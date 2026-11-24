@@ -1,8 +1,8 @@
-> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main), file docs/specs/capacity-bonds.md. Links into the private source tree are shown as plain text.
+> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main). Paths into the private source tree are left out.
 
 # Spec: capacity bonds
 
-Status: draft · Implemented in `crates/bwos-core/src/scoring/mod.rs` · See ADR-0006
+Status: draft · Implemented in `bwos_core::scoring` · See ADR-0006
 
 Bittensor has no native slashing for subnet-defined behavior. v0 therefore uses a **reputation bond**: the operator's future emissions are what's at risk. v1 may add an escrow contract on Bittensor EVM (OQ-2).
 

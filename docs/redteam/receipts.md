@@ -1,8 +1,8 @@
-> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main), file docs/specs/receipts.md. Links into the private source tree are shown as plain text.
+> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main). Paths into the private source tree are left out.
 
 # Spec: receipts
 
-Status: draft · Implemented in `crates/bwos-core/src/receipts.rs`
+Status: draft · Implemented in `receipts.rs`
 
 ## Traffic classes
 
@@ -97,7 +97,7 @@ Verified hop bytes are then credited to nodes once per path (`scoring.md` §Byte
 
 ## Hop digests (ADR-0038)
 
-Status: specified and spiked, **not scored** (`hop_digest::HOP_DIGESTS_SCORED` is `false`). Nothing below changes a weight until ADR-0038's `incentive-red-team` pass sets it `true`. Implemented in `crates/bwos-core/src/hop_digest.rs`; sampling and keys are in `measurement.md` §Secure sampling.
+Status: specified and spiked, **not scored** (`hop_digest::HOP_DIGESTS_SCORED` is `false`). Nothing below changes a weight until ADR-0038's `incentive-red-team` pass sets it `true`. Implemented in `hop_digest.rs`; sampling and keys are in `measurement.md` §Secure sampling.
 
 Hop digests show which packets each hop received, so sampled packets (`measurement.md` §Secure sampling) can be followed along a path. They don't replace hop receipts: pay gating stays on the co-signed totals above.
 
@@ -209,6 +209,6 @@ Validator ingest (`ObjectStore`):
 - **Order of checks (SEC-1).** An upload is checked cheapest first, and no signature is verified until every check that needs none has passed: the size bound and strict canonical parse; then, under the store lock briefly, the ingest allowlist, the window bound, a byte-identical replay of a stored batch (accepted, nothing to verify), domination by a stored batch, and the per-node, UID and window quotas. Bytes that failed verification before are refused here too, from a bounded cache (`MAX_FAILED_UPLOAD_CACHE`, N4). The quota checks use running counters, so the lock is held `O(log n)`. A refused upload stops here and never takes a verification slot. Then the batch's own signature is checked, once, off the lock, so a forgery with no key never takes a slot (N4). Only then is a slot taken: at most `MAX_CONCURRENT_RECEIPT_VERIFICATIONS` (4) per server and **one per node key**, so a bound key whose uploads fail slowly holds one slot at most; another upload gets `503` unverified. Signatures are checked with the lock released: the batch signature first, then each receipt's (`ReceiptBatch::verify`), so a junk batch signature costs one check, not up to 2,049. The lock is taken again briefly to repeat the cheap checks and insert. Reads therefore never wait behind a signature check. The loopback `PUT /v0/objects/receipt-batch/<hash>` takes the same order.
 - A batch is idempotent by its commitment hash.
 - A new batch from the same `(window, node)` that **dominates** a stored one supersedes it: every stored hop receipt has a counterpart for the same `(up, down)`, the new batch's highest-`seq` receipt of that stream, with `seq >=` and `total >=`, and any new receipt at the stored one's `seq` has an identical `total` and `block`; every stored client receipt has a counterpart for the same `(client, ingress, egress)` with `bytes >=`. A batch holds at most one hop receipt per `(up, down, seq)`, and may hold several per stream: its receipt runs (§Receipt runs). A batch dominated by a stored one, such as a replayed older upload, is refused. Cumulative uploads (about 15 per 72-minute window at `RECEIPT_UPLOAD_INTERVAL`) therefore keep one batch per node instead of hitting the cap.
-- **Quotas (F1).** A node's first batch for a window (counting a dominating batch that replaces its only one) is always admitted from a reserve, unless the node is at `MAX_BATCHES_PER_NODE_WINDOW = 8`. Further, non-dominating batches count against: the window's `MAX_RECEIPT_EXTRA_BATCHES_PER_WINDOW` (1_024); the UID's `RECEIPT_UID_QUOTA_PER_NODE` (2) batches per window per node it has on the allowlist, and at most `RECEIPT_UID_EXTRAS_CAP` (256) of the window's extras (N2), when the allowlist maps keys to UIDs; and the backstop `MAX_STORED_RECEIPT_BATCHES` (208_896) (`docs/specs/scoring.md` parameter table). So one UID with many sybil keys can't fill a window and lock out other nodes' batches (T118).
+- **Quotas (F1).** A node's first batch for a window (counting a dominating batch that replaces its only one) is always admitted from a reserve, unless the node is at `MAX_BATCHES_PER_NODE_WINDOW = 8`. Further, non-dominating batches count against: the window's `MAX_RECEIPT_EXTRA_BATCHES_PER_WINDOW` (1_024); the UID's `RECEIPT_UID_QUOTA_PER_NODE` (2) batches per window per node it has on the allowlist, and at most `RECEIPT_UID_EXTRAS_CAP` (256) of the window's extras (N2), when the allowlist maps keys to UIDs; and the backstop `MAX_STORED_RECEIPT_BATCHES` (208_896) (`the scoring spec` parameter table). So one UID with many sybil keys can't fill a window and lock out other nodes' batches (T118).
 - Validators SHOULD restrict ingest to live bound node keys (`ObjectStore::set_receipt_node_allowlist`). Otherwise anyone with freshly generated keys can fill the bounded store.
 - `PUT /v0/objects/<domain>/<hash>` is write-once. A second, different encoding of the same commitment, such as a different unverifiable `hotkey_sig`, is rejected with an error and never silently dropped.

@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Operator guide | Transit Fabric testnet 611</title><meta name="description" content="How to run and operate Transit Fabric nodes on testnet 611."><meta property="og:type" content="website"><meta property="og:site_name" content="Transit Fabric"><meta property="og:title" content="Operator guide | Transit Fabric testnet 611"><meta property="og:description" content="How to run and operate Transit Fabric nodes on testnet 611."><meta property="og:url" content="https://transitfabric.xyz/operator-guide.html"><meta property="og:image" content="https://transitfabric.xyz/og-card.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Transit Fabric logo"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Operator guide | Transit Fabric testnet 611"><meta name="twitter:description" content="How to run and operate Transit Fabric nodes on testnet 611."><meta name="twitter:image" content="https://transitfabric.xyz/og-card.png"><link rel="stylesheet" href="style.css?v=20261120c"><link rel="icon" type="image/png" href="logo.png"></head><body>
 <header><a class="brand" href="index.html"><picture><source srcset="logo-hero-dark-mode.png" media="(prefers-color-scheme: dark)"><img src="logo-hero.png" alt="" width="42" height="26"></picture>Transit Fabric</a>
-<nav class="groups" aria-label="Site"><details><summary class="active">Run a node</summary><div class="menu"><a href="quickstart.html">Quick start<small>Wallet, download, node, peer</small></a><a href="index.html#node-types">Node types<small>Which one you can run</small></a><a href="migrate.html">Move to tester.4.4<small>Rebuilt fleet: steps for each node</small></a><a href="operator-guide.html" aria-current="page">Operator guide<small>What pays, what your host must allow</small></a><a href="testnet-rules.html">Testnet rules<small>What testnet work may earn</small></a><a href="known-limits.html">Known limits<small>Read before reporting a bug</small></a></div></details><details><summary>Network</summary><div class="menu"><a href="https://dashboard.transitfabric.xyz/">Network dashboard<small>Live nodes, validators and routes</small></a><a href="leaderboard.html">Leaderboard<small>Founding testers by points</small></a></div></details><details><summary>Bounty</summary><div class="menu"><a href="bounty.html">Bug bounty<small>Points, tips and recognition</small></a><a href="claim.html">Claim credit<small>Register your address</small></a><a href="redteam/index.html">Red-team pack<small>Specs, threat model, simulator</small></a></div></details><details><summary>Fabric for</summary><div class="menu"><a href="for-isps.html">ISPs and carriers<small>Regional carriers and ISPs</small></a><a href="for-datacenters.html">Data centres and hosting<small>Capacity you already run</small></a><a href="for-vpn-providers.html">VPN providers<small>A measured backbone, and exits</small></a><a href="for-unused-transit.html">Unused transit<small>Committed transit you don't fill</small></a></div></details><details><summary>Learn</summary><div class="menu"><a href="papers.html">Papers<small>Whitepaper and short paper, EN and PL</small></a><a href="faq.html">FAQ<small>Customers, buying capacity, costs</small></a><a href="compare-nym.html">Fabric and Nym<small>How Fabric differs from a privacy mixnet</small></a></div></details><a class="top" href="https://github.com/transitfabric/releases/releases">Download</a></nav></header>
+<nav class="groups" aria-label="Site"><details><summary class="active">Run a node</summary><div class="menu"><a href="quickstart.html">Quick start<small>Wallet, download, node, peer</small></a><a href="index.html#node-types">Node types<small>Which one you can run</small></a><a href="migrate.html">Upgrade a node<small>Move to the current release, step by step</small></a><a href="operator-guide.html" aria-current="page">Operator guide<small>What pays, what your host must allow</small></a><a href="testnet-rules.html">Testnet rules<small>What testnet work may earn</small></a><a href="known-limits.html">Known limits<small>Read before reporting a bug</small></a></div></details><details><summary>Network</summary><div class="menu"><a href="https://dashboard.transitfabric.xyz/">Network dashboard<small>Live nodes, validators and routes</small></a><a href="leaderboard.html">Leaderboard<small>Founding testers by points</small></a></div></details><details><summary>Bounty</summary><div class="menu"><a href="bounty.html">Bug bounty<small>Points, tips and recognition</small></a><a href="claim.html">Claim credit<small>Register your address</small></a><a href="redteam/index.html">Red-team pack<small>Specs, threat model, simulator</small></a></div></details><details><summary>Fabric for</summary><div class="menu"><a href="for-isps.html">ISPs and carriers<small>Regional carriers and ISPs</small></a><a href="for-datacenters.html">Data centres and hosting<small>Capacity you already run</small></a><a href="for-vpn-providers.html">VPN providers<small>A measured backbone, and exits</small></a><a href="for-unused-transit.html">Unused transit<small>Committed transit you don't fill</small></a></div></details><details><summary>Learn</summary><div class="menu"><a href="papers.html">Papers<small>Whitepaper and short paper, EN and PL</small></a><a href="faq.html">FAQ<small>Customers, buying capacity, costs</small></a><a href="compare-nym.html">Fabric and Nym<small>How Fabric differs from a privacy mixnet</small></a></div></details><a class="top" href="https://github.com/transitfabric/releases/releases">Download</a></nav></header>
 <main>
 <h1 id="operator-guide">Operator guide</h1>
 <p>This page is for anyone running Transit Fabric nodes or a route
@@ -62,15 +62,14 @@ credited at most 100 Mb/s</td>
 </tr>
 <tr>
 <td><strong>OpenWrt router</strong></td>
-<td>The supported image or packages from the release</td>
+<td>The supported image or packages from the release (Linksys WRT1900AC v1, or GL.iNet GL-MT6000)</td>
 <td>It can peer and carry traffic, but <strong>routers aren't measured
 or paid yet</strong> (<a href="known-limits.html">Known limits</a>)</td>
 </tr>
 <tr>
 <td><strong>Route solver</strong></td>
 <td>Any machine that can run <code>bwos-solver daemon</code></td>
-<td>It can share a UID with your nodes (<a
-href="https://github.com/transitfabric/releases">solver guide</a>)</td>
+<td>It can share a UID with your nodes (<a href="https://github.com/transitfabric/releases/releases/download/v0.1.0-tester.5.2/run-a-solver.md">solver guide</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -89,8 +88,7 @@ region.</p>
 <li><strong>Steady UDP is normal.</strong> Some networks filter or
 rate-limit traffic that looks like a sustained UDP flood. If your
 sessions drop under load, ask your host.</li>
-<li><strong>TCP 8621 inbound</strong> on a public node, for the
-capacity-test sink.</li>
+<li><strong>TCP 8621 inbound</strong> on a public node, for the capacity-test sink, and <strong>UDP 8620 inbound from any address</strong>, for other nodes' signed direct probes (Mechanism 1 grading). It can't be limited to known addresses, because the probes come from any node.</li>
 <li><strong>Outbound:</strong> UDP to the validators' probe agents and
 TCP to their object stores. Behind NAT, also TCP to the probe agents'
 hosts for capacity tests.</li>
@@ -103,9 +101,7 @@ declare capacity.</li>
 monthly burst allowance. Plan for that before you declare
 (<a href="faq.html#do-capacity-tests-raise-my-95th-percentile-bill">FAQ</a>).</li>
 </ul></li>
-<li><strong>Your own address block.</strong> Two nodes in the same /24
-count once, whoever runs them. That includes neighbours at the same
-host.</li>
+<li><strong>Your own address block.</strong> For testnet reward points, two nodes in the same /24 count once, whoever runs them. That includes neighbours at the same host. That is a rule about points. How the chain's Mechanism 0 scoring treats nodes that share a network is set in the <a href="redteam/scoring.html">scoring spec</a>, and it is not the same rule.</li>
 </ul>
 <h2 id="declare-honestly">4. Declare honestly</h2>
 <ul>
@@ -153,9 +149,7 @@ limits</a>).</li>
 <h2 id="peer">6. Peer</h2>
 <ul>
 <li>A new node needs a peer.</li>
-<li>Until automatic peering ships, open a <strong>Peering
-request</strong> Issue. Our public node takes up to 16 testers' nodes,
-picked up within 5 minutes.</li>
+<li>Automatic peering starts with scoring version 2, at block 8,544,960 (about Sat 2026-11-28 16:03 UTC). A node opts in with <code>"peering"</code> in a kernel node's <code>node.json</code>, or <code>--public</code> (with <code>--validators</code> and <code>--node-key</code>) on a public no-root or container node. Until then, open a <strong>Peering request</strong> Issue. Our public node takes up to 16 testers' nodes, picked up within 5 minutes.</li>
 <li>Peering with other testers' new nodes earns the open-peer
 points.</li>
 </ul>

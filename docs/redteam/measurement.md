@@ -1,12 +1,12 @@
-> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main), file docs/specs/measurement.md. Links into the private source tree are shown as plain text.
+> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main). Paths into the private source tree are left out.
 
 # Spec: measurement
 
-Status: draft · Probe schedule and canary plans implemented in `crates/bwos-core/src/probe.rs` and `probe_canary.rs` · Vectors: `testdata/vectors/probe_schedule.json` · ADR-0039 (proposed) adds the sections marked with it. They are ahead of the code, and each says which Phase B task implements it (PB-06).
+Status: draft · Probe schedule and canary plans implemented in `probe.rs` and `probe_canary.rs` · Vectors: `probe_schedule.json` · ADR-0039 (proposed) adds the sections marked with it. They are ahead of the code, and each says which Phase B task implements it (PB-06).
 
 ## Canary plans (ADR-0051, ADR-0053, Task 14)
 
-Implemented in `crates/bwos-core/src/probe_canary.rs`, re-exported from `probe`. Vectors: the `canary` object in `probe_schedule.json` and the `canary-plan` entry in `canonical.json`. **Not scored.** How canary carriage is paid is PB-38, and nothing in `run_tempo` reads a canary plan yet.
+Implemented in `probe_canary.rs`, re-exported from `probe`. Vectors: the `canary` object in `probe_schedule.json` and the `canary-plan` entry in `canonical.json`. **Not scored.** How canary carriage is paid is PB-38, and nothing in `run_tempo` reads a canary plan yet.
 
 The always-on canary stream (ADR-0051 §1) is built in four parts:
 - an **allocation**, which node pairs carry how many bytes, drawn from public committed data so anyone can check it;
@@ -283,7 +283,7 @@ Implemented by Phase B Task 4Da (codec and vectors), Task 4Db (sessions, sender,
     - **The node's socket.** A node's socket is shared with BGP and transit, so it reads larger datagrams and applies the limit to the inner STAMP payload only.
 - **Fields.** Timestamps use the NTP 64-bit format, so the error estimate has `Z = 0`. The agent picks a random non-zero `ssid` per session.
   - **A no-root node's reflector has no wall clock.** It fills `timestamp` and `receive_timestamp` from its monotonic clock in NTP format, with the error estimate's S bit clear (not synchronised) and multiplier 1. These fields are dashboard-only (rule 4 below), so this changes nothing scored.
-- **Code.** Codec: `bwos_core::stamp` (`StampTest`, `StampReflected`, `encode_test`, `decode_test`, `encode_reflected`, `decode_reflected`). Vectors: `testdata/vectors/stamp.json`.
+- **Code.** Codec: `bwos_core::stamp` (`StampTest`, `StampReflected`, `encode_test`, `decode_test`, `encode_reflected`, `decode_reflected`). Vectors: `stamp.json`.
 
 **Reflector (the node).**
 - It runs in RFC 8762 stateless mode at its overlay `/128`, UDP 862.
@@ -551,7 +551,7 @@ Rates and budgets are in kbps (Task 4Dc fix round 1, OQ-91), so a small node's s
   - **A node is never skipped for being fast (red team RT2).** Budgets don't decide eligibility. They cap the rate below.
 - **Determinism.** Every validator computes the same assignment from committed inputs (`probe::team_schedule`).
 
-**Team draw.** The draw is stake-weighted, without replacement, in integers only, using `ValidatorEntry.stake` at `b`, over all of `E(b)` with `k = min(CAP_TEAM_MAX_VALIDATORS, |E(b)|)` (vectors: `testdata/vectors/cap_team.json`):
+**Team draw.** The draw is stake-weighted, without replacement, in integers only, using `ValidatorEntry.stake` at `b`, over all of `E(b)` with `k = min(CAP_TEAM_MAX_VALIDATORS, |E(b)|)` (vectors: `cap_team.json`):
 
 ```
 seed      = SHA-256("BWOS-v0/cap-team" || 0x00 || block_hash(b-1) || subject)
@@ -679,7 +679,7 @@ a test with k' < 2, or pushed = 0, isn't a sample
 
 **Code (Task 4Dc).**
 - **Combining.** `probe::team_capacity_mbps` (with `TeamMemberResult`, `TeamResult`, `team_median_member`); a member's `m_i` in kbps from its batch is `ProbeResultBatch::team_member_kbps_for` (echo-OK: `rtt_us > 0`, `loss_ppm == 0`, an ack for the derived `test_id`, enough bytes; `8 * ack.bytes * 1000 / rtt_us`), and a team cohort member's aggregate `ProbeResultBatch::team_cohort_kbps_for`. `ProbeResultBatch::to_metric_map` skips `capteam:` samples and team cohorts.
-- **Rates and draw.** `probe::test_rate_kbps` (the ramp), `probe::budget_kbps`, `probe::water_fill`, `probe::draw_team`, `probe::cap_team_seed`, `probe::cap_slot_key`. Vectors: `testdata/vectors/cap_team.json` (`make vectors`).
+- **Rates and draw.** `probe::test_rate_kbps` (the ramp), `probe::budget_kbps`, `probe::water_fill`, `probe::draw_team`, `probe::cap_team_seed`, `probe::cap_slot_key`. Vectors: `cap_team.json` (`make vectors`).
 - **Schedule.** `probe::team_schedule` over `probe::TeamScheduleInput`, producing `probe::CapAssignment`s (`rates_kbps`, `target_kbps` for cohort members, `uid`, `unproven_uid`); `probe::CAP_TEST_DEFER_BLOCKS`; the per-block draw `probe::draw_free_team`. `E(b)` from a signed set is `validator::set_eligible_validators`, over `validator::verified_set_chain(anchor, sets)` with the anchor `TempoInput.prev_validator_set`.
 - **Ids and keys.** `probe::CapTeamTest` (`ProbeResultBatch::cap_teams`), `probe::cap_team_test_id`, `probe::cap_team_key` and `parse_cap_team_key` (a `capteam:` sample key must be `capteam:<64 hex>:<canonical decimal>`).
 - **Scoring.** `validator::tempo_team_stage`: the window's blocks are `validator::window_blocks` (`[w * WINDOW_BLOCKS, (w + 1) * WINDOW_BLOCKS - 1]`); a sample counts only when it is looked up for a scheduled `(node, b)` in a member hotkey's committed batch, so unscheduled and foreign samples are never read. Background is `validator::window_background_mbps`; cohorts come from `validator::team_cohorts`. `run_tempo` switches to team mode when `TempoInput.block_hashes` is non-empty.
@@ -724,7 +724,7 @@ How scoring uses it: `capacity-bonds.md` §Endpoint dedupe. Residuals: simultane
 ### Peer-load capacity tests (ADR-0056)
 
 **Status: specified and simulated, not scored.** Red-team revision 1 (2026-11-08) is folded in below.
-- **The code.** `bwos_core::scoring::peer_load` holds the pure helpers; `validator::run_tempo` doesn't call them yet. The sims are in `crates/bwos-sim/src/peer_load.rs`.
+- **The code.** `bwos_core::scoring::peer_load` holds the pure helpers; `validator::run_tempo` doesn't call them yet. The sims are in `peer_load.rs`.
 - **Until it scores.** Team tests (above) stay the scored mechanism.
 - **Before it may score:**
   - the incentive red team's second pass;
@@ -920,7 +920,7 @@ The token is then spent. Anything else is closed unanswered.
 ## Secure sampling (ADR-0038)
 
 
-Status: specified and spiked, **not scored** (`hop_digest::HOP_DIGESTS_SCORED` is `false`). Implemented in `crates/bwos-core/src/hop_digest.rs`; vectors in `testdata/vectors/hop_digest.json`. How hops commit digests and how loss is attributed is in `receipts.md` §Hop digests.
+Status: specified and spiked, **not scored** (`hop_digest::HOP_DIGESTS_SCORED` is `false`). Implemented in `hop_digest.rs`; vectors in `hop_digest.json`. How hops commit digests and how loss is attributed is in `receipts.md` §Hop digests.
 
 The ingress and egress of a flow measure loss and delay on its real traffic by sampling packets that relays can't pick out. No byte is added to the packet.
 
@@ -1012,7 +1012,7 @@ All validators score from the same aggregated set, so Yuma consensus does not cl
 
 ## Live loop (Task 19b)
 
-`bwos-validator live --network local|test --netuid <n> --hotkey <file> --attestation-key <file> --state-dir <dir>` (`crates/bwos-validator/src/live.rs`) is the validator's per-window loop. It serves its object store (`--listen`, receipts open to the window's live nodes), fetches what it lacks from `--peer-validators`, and takes no demo input and no stakes, diversity or input file (F1, M4-08): every scoring input below comes from the chain and from objects the chain's commitments name. On `test`, a read with no staked hotkey is an error, never the one-vote fallback (`inputs::require_stake_source`, T21). Any network but `local` and `test` is refused before anything else, and the connection is genesis-checked (mainnet refused).
+`bwos-validator live --network local|test --netuid <n> --hotkey <file> --attestation-key <file> --state-dir <dir>` (`live.rs`) is the validator's per-window loop. It serves its object store (`--listen`, receipts open to the window's live nodes), fetches what it lacks from `--peer-validators`, and takes no demo input and no stakes, diversity or input file (F1, M4-08): every scoring input below comes from the chain and from objects the chain's commitments name. On `test`, a read with no staked hotkey is an error, never the one-vote fallback (`inputs::require_stake_source`, T21). Any network but `local` and `test` is refused before anything else, and the connection is genesis-checked (mainnet refused).
 
 **Schedule of window `w`** (`S = w * 360`; parameters in `scoring.md` §Parameters):
 
@@ -1152,7 +1152,7 @@ Residual (`[T29]`): beyond the one-sided budget both ends pay, but a griefing co
 
 This is evidence from outside the network that a node's ASN, upstreams and IXP presence are real: RPKI, ASPA, PeeringDB, RIS, RouteViews and RIPE Atlas. Validators snapshot it, sign it and commit it. Scoring never reads it live (Invariant 1).
 - **Phase B: vendored files.** The founder fetches the snapshot files, and `bwos-validator evidence-import` parses them. No Phase B code fetches outside evidence over the network. The TLS fetch is roadmap PC-16.
-- **Implementation.** Phase B Task 4C implements this section: `bwos_core::evidence`, `bwos-validator`'s `evidence_import.rs` and the fixtures in `testdata/evidence/` (one per source; `routeviews.convert.sh` keeps the RouteViews conversion command). The importer signs with the validator's Bittensor hotkey keyfile through `bwos_chain::Hotkey` (R20: sr25519 signing stays out of `bwos-core`).
+- **Implementation.** Phase B Task 4C implements this section: `bwos_core::evidence`, `bwos-validator`'s `evidence_import.rs` and the fixtures in `evidence/` (one per source; `routeviews.convert.sh` keeps the RouteViews conversion command). The importer signs with the validator's Bittensor hotkey keyfile through `bwos_chain::Hotkey` (R20: sr25519 signing stays out of `bwos-core`).
 
 **Object.** `OutsideEvidence`, under domain `outside-evidence`:
 
@@ -1173,7 +1173,7 @@ This is evidence from outside the network that a node's ASN, upstreams and IXP p
 | `atlas_rtt` | `probe`, `target`, `rtt_us` | `atlas` |
 
 - **Kind must match source.** An object holding a record its source doesn't allow is invalid as a whole.
-- **Records.** They are sorted and unique by canonical bytes. Prefixes are canonical CIDR: network address, lower-case IPv6. ASNs are non-zero. The whole object fits `MAX_WIRE_BYTES`. Task 4C's vector in `testdata/vectors/canonical.json` pins the bytes.
+- **Records.** They are sorted and unique by canonical bytes. Prefixes are canonical CIDR: network address, lower-case IPv6. ASNs are non-zero. The whole object fits `MAX_WIRE_BYTES`. Task 4C's vector in `canonical.json` pins the bytes.
 - **Signature.** `sig` is the validator hotkey's sr25519 signature over `wire::signing_bytes("outside-evidence", obj)`, checked with `identity::verify_sr25519`.
 - **Hash.** The manifest slot and the object-store key are `wire::hash_hex("outside-evidence", obj)`, the plain hash without `sig`, as for `probe-result`. `outside-evidence` isn't a sealed-hash domain: the store verifies the signature on every PUT, and only the hotkey itself can sign another copy of the same body (`object_store::ALLOWED_OBJECT_DOMAINS`).
 - **Other checks.** `v` is `0`, `validator` is a valid SS58 address, an `atlas_rtt` `target` is a canonical IP address (lower-case IPv6), `aspa_providers.providers` holds no `0`, an `ix_presence` `asn` is non-zero, and an `origin` prefix is at least /8 (IPv4) or /16 (IPv6), so no record covers nearly every endpoint (`MIN_ORIGIN_PREFIX_V4`, `MIN_ORIGIN_PREFIX_V6`, red team RT2) (`evidence::OutsideEvidence::validate`). ROA prefixes may be shorter.

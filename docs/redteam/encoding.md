@@ -1,8 +1,8 @@
-> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main), file docs/specs/encoding.md. Links into the private source tree are shown as plain text.
+> Taken from the Transit Fabric source repository at commit 91be12e (91be12ef98b775c7f045124e6b8c686c15439650, main). Paths into the private source tree are left out.
 
 # Spec: encoding and signing (v0)
 
-Status: draft · Implemented in `crates/bwos-core/src/wire.rs` · Vectors: `testdata/vectors/canonical.json`
+Status: draft · Implemented in `wire.rs` · Vectors: `canonical.json`
 
 ## Canonical JSON
 
@@ -25,7 +25,7 @@ signing_bytes(domain, obj) = "BWOS-v0/" || domain || 0x00 || canonical_json(obj_
 
 Top-level signature fields (`sig`, `sig_up`, `sig_down`, `hotkey_sig`) are removed before encoding.
 
-A hotkey's sr25519 `hotkey_sig` on a `commitment-manifest` may instead be over exactly `<Bytes>` || `signing_bytes` || `</Bytes>`, the form a browser wallet's `signRaw` signs (ADR-0054, `identity::verify_sr25519_hotkey_sig`). No other wrapping, and no other domain, is accepted (an SS58 `node-binding` signature is checked nowhere until OQ-131; if it is, the same rule applies). Vectors: `testdata/vectors/wallet_link.json`.
+A hotkey's sr25519 `hotkey_sig` on a `commitment-manifest` may instead be over exactly `<Bytes>` || `signing_bytes` || `</Bytes>`, the form a browser wallet's `signRaw` signs (ADR-0054, `identity::verify_sr25519_hotkey_sig`). No other wrapping, and no other domain, is accepted (an SS58 `node-binding` signature is checked nowhere until OQ-131; if it is, the same rule applies). Vectors: `wallet_link.json`.
 
 ## Domains
 
@@ -106,7 +106,7 @@ field 2 : Raw<len-128>(payload[128 ..])                                         
 
 - A registration is Transit Fabric's only as `[Sha256]` or `[Sha256 | None, Raw, Raw?]` with the canonical split.
 - Decoding is exact: no trailing bytes, version `0`, valid non-weak Ed25519 keys and `not_before <= not_after`.
-- Vectors: `testdata/vectors/inline_binding.json`, with payloads and field splits for 1, 3, 4 and 7 nodes, the equivalent `node-binding` and its hash, layouts that are and aren't Transit Fabric's, and refused payloads with their error text. Both `bwos-core` and the link page are tested against it.
+- Vectors: `inline_binding.json`, with payloads and field splits for 1, 3, 4 and 7 nodes, the equivalent `node-binding` and its hash, layouts that are and aren't Transit Fabric's, and refused payloads with their error text. Both `bwos-core` and the link page are tested against it.
 
 ## Reserved derivation labels
 
