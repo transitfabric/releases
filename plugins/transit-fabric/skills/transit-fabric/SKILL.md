@@ -1,13 +1,15 @@
 ---
 name: transit-fabric
-description: Use when the user wants to install, run, check or troubleshoot a Transit Fabric node on Bittensor testnet subnet 611, interpret `bwos doctor` output, or file a bug report for Transit Fabric (tester v0.1.0-tester.5.3). Testnet only. Covers verifying downloads, handing key and binding steps to the human, System One (fabric-sense), and filing an Issue.
+description: Use when the user wants to install, run, check or troubleshoot a Transit Fabric node on Bittensor testnet subnet 611, interpret `bwos doctor` output, or file a bug report for Transit Fabric (tester v0.1.0-tester.5.3.1). Testnet only. Covers verifying downloads, handing key and binding steps to the human, System One (fabric-sense), and filing an Issue.
 ---
 
-# Transit Fabric testnet (tester v0.1.0-tester.5.3)
+# Transit Fabric testnet (tester v0.1.0-tester.5.3.1)
 
 Transit Fabric is a network fabric run as a Bittensor subnet. This release is on **testnet, subnet 611** only. The command-line tools are named `bwos`. System One (`fabric-sense`) is the node's watchdog sidecar.
 
-**New in tester.5.3 (validators, their probe agents, and `bwos report`):** fixes from tester reports. `bwos report` now redacts seed phrases and WireGuard keys in JSON-escaped logs, including doubled escapes; if you posted a report bundle publicly, delete it and rotate your keys. Validators and shadow validators need tester.5.3 before `V1_ACTIVE_BLOCK` (block 8,538,840, about Fri 2026-11-27 19:39 UTC): it fixes the validator set built from the chain, a corrupted capacity echo that was credited (failed from scoring version 2), and capacity tests that stall. Nodes and solvers stay on tester.5.1; update the `bwos` CLI if you run `bwos report`. Scoring versions 0 and 1 are unchanged.
+**New in tester.5.3.1 (validators only):** a validator no longer stalls when one read source briefly serves a block hash from an unfinalized fork; a read that doesn't agree is read again from scratch. Validators and shadow validators need it; nodes, solvers and probe agents don't. No scoring change.
+
+**From tester.5.3 (validators, their probe agents, and `bwos report`):** fixes from tester reports. `bwos report` now redacts seed phrases and WireGuard keys in JSON-escaped logs, including doubled escapes; if you posted a report bundle publicly, delete it and rotate your keys. Validators and shadow validators need tester.5.3 before `V1_ACTIVE_BLOCK` (block 8,538,840, about Fri 2026-11-27 19:39 UTC): it fixes the validator set built from the chain, a corrupted capacity echo that was credited (failed from scoring version 2), and capacity tests that stall. Nodes and solvers stay on tester.5.1; update the `bwos` CLI if you run `bwos report`. Scoring versions 0 and 1 are unchanged.
 
 **From tester.5.2 (validators only):** a validator restarted during a window now keeps that window's path-probe draw and the drawn route tables on disk (`draws/` in its state directory), so it carries the same state and sets the same weights as if it had never restarted. Validators and shadow validators need it. Nodes and solvers stay on tester.5.1. No scoring change.
 

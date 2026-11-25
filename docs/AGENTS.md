@@ -1,10 +1,12 @@
-# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.5.3)
+# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.5.3.1)
 
 For AI agents working on behalf of a tester. Humans: start at https://transitfabric.xyz/quickstart.html. A shorter index in the llms.txt format is at https://transitfabric.xyz/llms.txt.
 
-Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.5.3** as it is today. The command-line tools are still named `bwos`.
+Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.5.3.1** as it is today. The command-line tools are still named `bwos`.
 
-**New in tester.5.3 (validators, their probe agents, and `bwos report`):** fixes from tester reports. `bwos report` now redacts seed phrases and WireGuard keys in JSON-escaped logs, including doubled escapes; if you posted a report bundle publicly, delete it and rotate your keys. Validators and shadow validators need tester.5.3 before `V1_ACTIVE_BLOCK` (block 8,538,840, about Fri 2026-11-27 19:39 UTC): it fixes the validator set built from the chain, a corrupted capacity echo that was credited (failed from scoring version 2), and capacity tests that stall. Nodes and solvers stay on tester.5.1; update the `bwos` CLI if you run `bwos report`. Scoring versions 0 and 1 are unchanged.
+**New in tester.5.3.1 (validators only):** a validator no longer stalls when one read source briefly serves a block hash from an unfinalized fork; a read that doesn't agree is read again from scratch. Validators and shadow validators need it; nodes, solvers and probe agents don't. No scoring change.
+
+**From tester.5.3 (validators, their probe agents, and `bwos report`):** fixes from tester reports. `bwos report` now redacts seed phrases and WireGuard keys in JSON-escaped logs, including doubled escapes; if you posted a report bundle publicly, delete it and rotate your keys. Validators and shadow validators need tester.5.3 before `V1_ACTIVE_BLOCK` (block 8,538,840, about Fri 2026-11-27 19:39 UTC): it fixes the validator set built from the chain, a corrupted capacity echo that was credited (failed from scoring version 2), and capacity tests that stall. Nodes and solvers stay on tester.5.1; update the `bwos` CLI if you run `bwos report`. Scoring versions 0 and 1 are unchanged.
 
 **From tester.5.2 (validators only):** a validator restarted during a window now keeps that window's path-probe draw and the drawn route tables on disk (`draws/` in its state directory), so it carries the same state and sets the same weights as if it had never restarted. Validators and shadow validators need it. Nodes and solvers stay on tester.5.1. No scoring change.
 
