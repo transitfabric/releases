@@ -3,7 +3,7 @@ title: "One line: what breaks, and who gains"
 severity: medium                # critical | high | medium | low (tiers on https://transitfabric.xyz/bounty.html)
 eligibility: open               # verified | open (see "Who can earn points for findings" on the bounty page)
 component: scoring              # scoring | measurement | receipts | identity | encoding | node | validator | solver | cli | link-page | docs | other
-version: v0.1.0-tester.5.1        # the release tag, or the red-team pack tag (redteam-pack-<sha>) for a simulator finding
+version: v0.1.0-tester.5.3        # the release tag, or the red-team pack tag (redteam-pack-<sha>) for a simulator finding
 ---
 
 # Finding template
