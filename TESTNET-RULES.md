@@ -167,7 +167,7 @@ claimant's alpha = track pool × claimant's points / all points in that track
 
 - **Solvers.** You earn 1 point for each window your table is fetched on time and graded at least 2% better than the reference, plus 1 point for the best table of the window.
 - **Findings.**
-  - Points use the [bounty page](bounty.html) tiers. Reports sent before the bounty opens count, in order of receipt.
+  - Points use the [bounty page](bounty.html) tiers. The public bug bounty is not open yet; public bounty points start only on the announced opening date. Private bug and security reports are welcome now, and any pre-opening credit is strictly discretionary.
   - The first valid private report of an exploit earns its tier, even if your own nodes profited from it first. Only that profit is removed.
 - **Docs and onboarding.** Each of these earns 5 points:
   - a merged doc fix;
