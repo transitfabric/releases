@@ -44,7 +44,7 @@ const MAX_MD = 1024 * 1024;           // 1 MiB of markdown
 const MAX_ZIP = 10 * 1024 * 1024;     // 10 MiB zip attachment
 const MAX_BODY = 12 * 1024 * 1024;    // whole request
 const MAX_CONTACT = 200;              // optional contact handle, characters
-const PER_IP_PER_DAY = 10;            // uploads per hashed address per UTC day
+const PER_IP_PER_DAY = 40;            // uploads per hashed address per UTC day (raised from 10 on 2026-11-24: testers hit it)
 const VERDICTS = ['valid', 'invalid', 'duplicate', 'closed'];
 const FORM_FIELDS = ['github', 'address', 'title', 'version', 'severity', 'eligibility', 'component', 'repro', 'expected', 'actual', 'details'];
 
@@ -287,7 +287,16 @@ async function readRegistered(env) {
   }
 }
 
+function bountyOpen(env) {
+  return String(env?.BOUNTY_OPEN || "").trim().toLowerCase() === "true";
+}
+
 async function handleFinding(request, env, now) {
+  if (!bountyOpen(env)) {
+    return json(503, {
+      error: "The public bug bounty is not open yet. Private bug and security reports are welcome via POST /upload (plain upload) or GitHub Security Advisories; any pre-opening credit is strictly discretionary. We will announce the opening date on https://transitfabric.xyz/bounty.html and in Discord.",
+    });
+  }
   const { bucket, body: form } = await admit(request, env, "finding", ["multipart/form-data"]);
   const fields = {};
   for (const k of FORM_FIELDS) {
@@ -339,8 +348,13 @@ async function handleFinding(request, env, now) {
   }
   // Dedupe on the account's key bytes, not the address string, so another ss58 prefix is the
   // same finding (review L4). The signature stays over the address as the submitter wrote it.
-  const dedupe = await sha256Hex(canonicalFinding({ ...fields, address: account }));
-  const earlier = await env.SUB.get(`dig:${dedupe}`);
+  const dedupe = await sha256Hex(canonicalFinding({ ...fields, address: account, github: fields.github.toLowerCase() }));
+  let earlier = await env.SUB.get(`dig:${dedupe}`);
+  if (earlier === null && fields.github !== fields.github.toLowerCase()) {
+    // Keys written before the case-insensitive dedupe (2026-11-25) used the handle as typed.
+    // TODO(PB-71): drop this fallback after 2026-12-26.
+    earlier = await env.SUB.get(`dig:${await sha256Hex(canonicalFinding({ ...fields, address: account }))}`);
+  }
   if (earlier !== null) return json(409, { error: "this finding was already submitted", receipt: earlier });
   const open = await readOpen(env, account);
   const cap = MAX_OPEN[tier];
@@ -523,19 +537,24 @@ const ATTEST_FIELDS = `<label class="check" for="age_attested"><input id="age_at
 
 const FOOTER = `<footer>Testnet subnet 611 only. <a href="${TERMS_URL}">Terms</a> · <a href="${PRIVACY_URL}">Privacy</a> · <a href="https://transitfabric.xyz/bounty.html">Bounty rules</a></footer>`;
 
-const PAGE = `<!doctype html>
+function renderPage(open) {
+  const banner = open
+    ? `<p><strong>For points, use the <a href="/finding">signed finding form</a>.</strong> It needs a registration on the <a href="https://transitfabric.xyz/claim.html">claim page</a>, a reproduction, the version, and a proof-of-concept zip, and your registered wallet signs it. See the <a href="https://transitfabric.xyz/bounty.html">bounty page</a>.</p>
+<p>The plain upload below needs no account and <strong>earns no credit</strong>. Both are private: read by the maintainers and never shown publicly, so security findings are welcome.</p>`
+    : `<p><strong>Bug bounty: not open yet.</strong> The public bug bounty and signed finding form (<code>/finding</code>) are paused while we roll out scoring version 2 and clear major pre-audit hardening fixes. We will announce the official opening date on the <a href="https://transitfabric.xyz/bounty.html">bounty page</a> and in Discord.</p>
+<p>Private bug and security reports are still welcome through the plain upload below (or <a href="https://github.com/transitfabric/releases/security/advisories/new">GitHub Security Advisories</a>). Uploads are read privately by maintainers and never shown publicly; any credit before the official opening is strictly discretionary.</p>`;
+  return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Findings Sandbox | Transit Fabric</title>
 ${STYLE}</head><body><main>
 <h1>Findings sandbox</h1>
 <p class="muted">Private intake for Transit Fabric testnet findings.</p>
 <div class="card warn">
-<p><strong>For points, use the <a href="/finding">signed finding form</a>.</strong> It needs a registration on the <a href="https://transitfabric.xyz/claim.html">claim page</a>, a reproduction, the version, and a proof-of-concept zip, and your registered wallet signs it. See the <a href="https://transitfabric.xyz/bounty.html">bounty page</a>.</p>
-<p>The plain upload below needs no account and <strong>earns no credit</strong>. Both are private: read by the maintainers and never shown publicly, so security findings are welcome.</p>
+${banner}
 <p>Never include a private key, seed phrase or wallet file. Remove IP addresses from logs.</p>
 </div>
 <form class="card" id="f">
-<h2>Plain upload (no credit)</h2>
+<h2>Plain upload${open ? " (no credit)" : " (private report)"}</h2>
 <label for="file">Your finding (markdown, up to 1 MB)</label>
 <input id="file" name="file" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" required>
 <p class="muted">Use the <a href="https://transitfabric.xyz/redteam/FINDING.md">finding template</a>.</p>
@@ -551,17 +570,32 @@ ${ATTEST_FIELDS}
 <pre>curl -sS -F file=@finding.md -F age_attested=yes -F terms_version=${TERMS_VERSION} https://submit.transitfabric.xyz/upload
 # optional: -F attachment=@repro.zip -F contact=yourname</pre>
 <p class="muted"><code>age_attested=yes</code> confirms: ${FORM_ATTESTATION}. Without it the upload is refused.</p>
-<p class="muted">The reply is JSON with a receipt ID. Limit: ${PER_IP_PER_DAY} uploads per day per address. For the signed form from a script, see <a href="/finding">/finding</a>.</p></div>
+<p class="muted">The reply is JSON with a receipt ID. Limit: ${PER_IP_PER_DAY} uploads per day per address.${open ? ' For the signed form from a script, see <a href="/finding">/finding</a>.' : ""}</p></div>
 </main><script>
 document.getElementById('f').addEventListener('submit',async e=>{e.preventDefault();
 const out=document.getElementById('out'),res=document.getElementById('res');out.hidden=false;res.textContent='Uploading…';
 try{const r=await fetch('/upload',{method:'POST',body:new FormData(e.target)});res.textContent=await r.text();}
 catch(err){res.textContent='Upload failed: '+err.message;}});
 </script>${FOOTER}</body></html>`;
+}
 
 const opts = (list) => list.map((v) => `<option value="${v}">${v}</option>`).join("");
 
-const FORM_PAGE = `<!doctype html>
+function renderFormPage(open) {
+  if (!open) {
+    return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Signed Finding (Not Open Yet) | Transit Fabric</title>
+${STYLE}</head><body><main>
+<h1>Signed finding — not open yet</h1>
+<p class="muted">Rules: <a href="https://transitfabric.xyz/bounty.html">bounty page</a>.</p>
+<div class="card warn">
+<p><strong>The public bug bounty is not open yet.</strong> The signed finding form (<code>POST /finding</code>) is paused while we finish scoring version 2 and major pre-audit hardening fixes. We will announce the official opening date and baseline release on the <a href="https://transitfabric.xyz/bounty.html">bounty page</a> and in Discord.</p>
+<p>Private bug and security reports are still welcome through the <a href="/">plain upload form</a> or <a href="https://github.com/transitfabric/releases/security/advisories/new">GitHub Security Advisories</a>. Any credit for reports sent before the official opening is strictly discretionary.</p>
+</div>
+</main>${FOOTER}</body></html>`;
+  }
+  return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Signed Finding | Transit Fabric</title>
 ${STYLE}</head><body><main>
@@ -655,6 +689,7 @@ $('send').addEventListener('click',async function(){
 });
 })();
 </script>${FOOTER}</body></html>`;
+}
 
 const PAGE_CSP = "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; form-action 'self'; base-uri 'none'";
 
@@ -693,7 +728,7 @@ async function route(request, env, now) {
   if (request.method === "POST" && url.pathname === "/upload") return handleUpload(request, env, now);
   if (request.method === "POST" && url.pathname === "/finding") return handleFinding(request, env, now);
   if (url.pathname.startsWith("/admin/")) return handleAdmin(request, env, url, now);
-  if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) return page(PAGE);
-  if (request.method === "GET" && url.pathname === "/finding") return page(FORM_PAGE);
+  if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) return page(renderPage(bountyOpen(env)));
+  if (request.method === "GET" && url.pathname === "/finding") return page(renderFormPage(bountyOpen(env)));
   return json(404, { error: "not found" });
 }

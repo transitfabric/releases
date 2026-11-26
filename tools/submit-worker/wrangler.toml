@@ -1,15 +1,20 @@
 # The findings sandbox at submit.transitfabric.xyz. Secrets (ADMIN_KEY, IP_SALT) are set on the
 # Worker with `wrangler secret put` and are never in this file; `wrangler deploy` keeps them.
-# Settings match the deployment: compatibility date, no workers.dev route, the custom domain.
+# The account comes from CLOUDFLARE_ACCOUNT_ID at deploy time. Settings match the deployment of
+# 2026-11-13 (compatibility date, no workers.dev route, the custom domain).
 name = "tf-submit"
 main = "worker.js"
 compatibility_date = "2024-09-23"
 workers_dev = false
 routes = [{ pattern = "submit.transitfabric.xyz", custom_domain = true }]
 
+[vars]
+# Flip to "true" only when the public bug bounty officially opens (MN-08).
+BOUNTY_OPEN = "false"
+
 [[kv_namespaces]]
 binding = "SUB"
-id = "<your KV namespace id>"
+id = "2ca1726e3e664757a2b526f025b08eb6"
 
 # The per-minute burst limit, keyed per route and client (IPv4 address or IPv6 /64), checked before
 # any KV access (security review M1). The daily counter in KV stays as a backstop. namespace_id is
