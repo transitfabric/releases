@@ -1,10 +1,12 @@
-# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.5.3.1)
+# AGENTS.md: Transit Fabric testnet (tester v0.1.0-tester.5.4)
 
 For AI agents working on behalf of a tester. Humans: start at https://transitfabric.xyz/quickstart.html. A shorter index in the llms.txt format is at https://transitfabric.xyz/llms.txt.
 
-Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.5.3.1** as it is today. The command-line tools are still named `bwos`.
+Transit Fabric is a Bittensor subnet for a decentralized network fabric, running on **testnet, subnet 611**. This file describes release **v0.1.0-tester.5.4** as it is today. The command-line tools are still named `bwos`.
 
-**New in tester.5.3.1 (validators only):** a validator no longer stalls when one read source briefly serves a block hash from an unfinalized fork; a read that doesn't agree is read again from scratch. Validators and shadow validators need it; nodes, solvers and probe agents don't. No scoring change.
+**New in tester.5.4 (nodes, solvers, CLI, validators and shadow validators):** prepares 611 for Scoring V2 (block 8,544,960, ~Sat 2026-11-28 16:03 UTC; V0, V1 and V2 weights byte-identical to tester.5.3.1). Fixes dual-stack `--listen [::]` for IPv4 peers (`IPV6_V6ONLY=0`), V2 direct-echo flood protection, `install.sh` stale-apply / static-peer healing, solver prior-window hydration on restart, and pre-V2 validator, probe-agent, multi-source RPC, `bwos report` redaction, offline-default `bwos-mcp`, and link-page hardening. Nodes and solvers update before Sat 2026-11-28 14:51 UTC (block 8,544,600); validators upgrade after the restart freeze ends (Fri 2026-11-27 20:51 UTC).
+
+**From tester.5.3.1 (validators only):** a validator no longer stalls when one read source briefly serves a block hash from an unfinalized fork; a read that doesn't agree is read again from scratch. Validators and shadow validators need it; nodes, solvers and probe agents don't. No scoring change.
 
 **From tester.5.3 (validators, their probe agents, and `bwos report`):** fixes from tester reports. `bwos report` now redacts seed phrases and WireGuard keys in JSON-escaped logs, including doubled escapes; if you posted a report bundle publicly, delete it and rotate your keys. Validators and shadow validators need tester.5.3 before `V1_ACTIVE_BLOCK` (block 8,538,840, about Fri 2026-11-27 19:39 UTC): it fixes the validator set built from the chain, a corrupted capacity echo that was credited (failed from scoring version 2), and capacity tests that stall. Nodes and solvers stay on tester.5.1; update the `bwos` CLI if you run `bwos report`. Scoring versions 0 and 1 are unchanged.
 
@@ -26,7 +28,7 @@ Transit Fabric is a Bittensor subnet for a decentralized network fabric, running
 
 ## Where things are
 
-- Release and downloads: https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.5.3. Binaries are for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `fabric-sense`, `bwos-solver`, `bwos-validator`, `minimal_solver`), plus a no-root container image, router images and `install.sh`. The `bwos` CLI also ships for macOS, and the link page for any OS.
+- Release and downloads: https://github.com/transitfabric/releases/releases/tag/v0.1.0-tester.5.4. Binaries are for Linux x86_64 and aarch64 (`bwos-node`, `bwos`, `bwos-probe`, `fabric-sense`, `bwos-solver`, `bwos-validator`, `minimal_solver`), plus a no-root container image, router images and `install.sh`. The `bwos` CLI also ships for macOS, and the link page for any OS.
 - Checksums: the `SHA256SUMS` asset on the release. `MANIFEST.json` has the commit and the file list. `latest.json` (a release asset) lists the version, every asset's sha256 and url, the hash of `SHA256SUMS` and the validator set's `validator_set_not_after_block`. It comes from the same place as the files, so it does not replace comparing `SHA256SUMS` with the announced hash.
 - Quick start: https://transitfabric.xyz/quickstart.html. Also the `QUICKSTART.md` and `testers.md` assets. Read the quick start before you act.
 - Known limits: https://transitfabric.xyz/known-limits.html.
